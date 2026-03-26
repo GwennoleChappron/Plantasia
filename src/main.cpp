@@ -19,9 +19,10 @@
 //  PALETTE
 // ─────────────────────────────────────────────
 namespace Couleurs {
+    // On met un peu de transparence (0.90f au lieu de 1.00f) sur la surface pour voir les lucioles à travers !
     const ImVec4 Fond          = ImVec4(0.04f, 0.06f, 0.04f, 1.00f);
-    const ImVec4 Surface       = ImVec4(0.07f, 0.10f, 0.07f, 1.00f);
-    const ImVec4 SurfaceHaute  = ImVec4(0.11f, 0.15f, 0.11f, 1.00f);
+    const ImVec4 Surface       = ImVec4(0.07f, 0.10f, 0.07f, 0.90f); 
+    const ImVec4 SurfaceHaute  = ImVec4(0.11f, 0.15f, 0.11f, 0.95f);
     const ImVec4 Bordure       = ImVec4(0.18f, 0.28f, 0.18f, 1.00f);
     const ImVec4 Accent        = ImVec4(0.20f, 0.75f, 0.40f, 1.00f);
     const ImVec4 AccentDoux    = ImVec4(0.15f, 0.55f, 0.30f, 1.00f);
@@ -29,8 +30,6 @@ namespace Couleurs {
     const ImVec4 Texte         = ImVec4(0.88f, 0.92f, 0.88f, 1.00f);
     const ImVec4 TexteDoux     = ImVec4(0.55f, 0.68f, 0.55f, 1.00f);
     const ImVec4 TexteInactif  = ImVec4(0.30f, 0.40f, 0.30f, 1.00f);
-    const ImVec4 Danger        = ImVec4(0.75f, 0.22f, 0.22f, 1.00f);
-    const ImVec4 DangerHover   = ImVec4(0.90f, 0.30f, 0.30f, 1.00f);
 }
 
 // ─────────────────────────────────────────────
@@ -43,15 +42,13 @@ void AppliquerStyle() {
     s.PopupRounding     = 10.0f;
     s.ChildRounding     = 8.0f;
     s.WindowBorderSize  = 1.0f;
-    s.ItemSpacing       = ImVec2(10.0f, 8.0f);
-    s.FramePadding      = ImVec2(12.0f, 7.0f);
+    s.ItemSpacing       = ImVec2(10.0f, 10.0f);
+    s.FramePadding      = ImVec2(12.0f, 8.0f);
     s.WindowPadding     = ImVec2(18.0f, 16.0f);
-    s.ScrollbarSize     = 8.0f;
 
     ImVec4* c = s.Colors;
     c[ImGuiCol_WindowBg]             = Couleurs::Surface;
-    c[ImGuiCol_ChildBg]              = Couleurs::Fond;
-    c[ImGuiCol_PopupBg]              = Couleurs::Surface;
+    c[ImGuiCol_ChildBg]              = ImVec4(0.04f, 0.06f, 0.04f, 0.70f); // Fond des listes plus transparent
     c[ImGuiCol_Border]               = Couleurs::Bordure;
     c[ImGuiCol_FrameBg]              = Couleurs::SurfaceHaute;
     c[ImGuiCol_FrameBgHovered]       = ImVec4(0.15f, 0.22f, 0.15f, 1.0f);
@@ -61,6 +58,13 @@ void AppliquerStyle() {
     c[ImGuiCol_ButtonActive]         = Couleurs::Accent;
     c[ImGuiCol_Text]                 = Couleurs::Texte;
     c[ImGuiCol_TextDisabled]         = Couleurs::TexteInactif;
+    
+    // Couleurs pour les onglets
+    c[ImGuiCol_Tab]                  = Couleurs::SurfaceHaute;
+    c[ImGuiCol_TabHovered]           = Couleurs::AccentDoux;
+    c[ImGuiCol_TabActive]            = Couleurs::AccentSombre;
+    c[ImGuiCol_TabUnfocused]         = Couleurs::Surface;
+    c[ImGuiCol_TabUnfocusedActive]   = Couleurs::SurfaceHaute;
 }
 
 // ─────────────────────────────────────────────
@@ -97,47 +101,53 @@ void DessinerFeuille(ImDrawList* dl, float x, float y, float angle, float taille
 }
 
 void DessinerLianesEtLucioles(ImDrawList* dl, float W, float H, float temps) {
-    // 1. Lucioles (Particules en arrière-plan)
-    for(int i = 0; i < 45; i++) {
+    // 1. Lucioles (Plus grosses, plus nombreuses, plus lumineuses)
+    for(int i = 0; i < 80; i++) {
         float sx = std::fmod(i * 137.5f, W);
         float sy = std::fmod(i * 93.1f, H);
-        float speed = 8.f + (i % 8);
-        float x = sx + std::sin(temps * 0.4f + i) * 40.f;
+        float speed = 5.f + (i % 8);
+        float x = sx + std::sin(temps * 0.4f + i) * 50.f;
         float y = sy - std::fmod(temps * speed, H);
         if (y < 0) y += H;
-        float alpha = (std::sin(temps * 1.5f + i) * 0.5f + 0.5f) * 180.f; // Clignotement
-        dl->AddCircleFilled(ImVec2(x, y), 1.0f + (i % 3) * 0.5f, IM_COL32(200, 255, 150, (int)alpha));
+        float alpha = (std::sin(temps * 2.0f + i) * 0.5f + 0.5f) * 255.f; 
+        // Tailles variables pour la profondeur
+        float rayon = 2.0f + (i % 4) * 0.8f;
+        dl->AddCircleFilled(ImVec2(x, y), rayon, IM_COL32(190, 255, 140, (int)alpha));
     }
 
-    // 2. Lianes (Cadre végétal)
-    const ImU32 tige  = IM_COL32(30, 80, 40, 200);
-    const ImU32 feuA  = IM_COL32(35, 110, 50, 180);
-    const ImU32 feuB  = IM_COL32(20, 70, 35, 160);
+    // 2. Lianes (Décalées vers l'intérieur pour ne pas être cachées par la marge)
+    const ImU32 tige  = IM_COL32(30, 90, 45, 220);
+    const ImU32 feuA  = IM_COL32(40, 130, 55, 200);
+    const ImU32 feuB  = IM_COL32(25, 85, 40, 180);
 
     auto tracerTige = [&](const std::vector<PointLiane>& pts, float ep) {
         for (int i = 1; i < (int)pts.size(); i++)
             dl->AddLine(ImVec2(pts[i-1].x, pts[i-1].y), ImVec2(pts[i].x, pts[i].y), tige, ep);
     };
 
-    auto lg = GenererLiane(8, H*0.95f, 8, H*0.05f, 12.f, 3.5f, temps*0.4f, true);
-    tracerTige(lg, 2.2f);
-    for (int i = 5; i < (int)lg.size()-5; i += 8) {
+    // Liane gauche (Positionnée à X = 20 au lieu de 8)
+    auto lg = GenererLiane(20, H*0.95f, 20, H*0.05f, 15.f, 3.5f, temps*0.4f, true);
+    tracerTige(lg, 3.0f);
+    for (int i = 5; i < (int)lg.size()-5; i += 7) {
         float t = (float)i/lg.size();
         float a = 3.141f*0.4f + std::sin(t*5.f+temps)*0.3f;
-        DessinerFeuille(dl, lg[i].x+10, lg[i].y,  a, 8.f + std::sin(t*4.f)*3.f, (i%16==5)?feuB:feuA);
+        DessinerFeuille(dl, lg[i].x+12, lg[i].y,  a, 12.f + std::sin(t*4.f)*4.f, (i%2==0)?feuB:feuA);
+        DessinerFeuille(dl, lg[i].x-12, lg[i].y, -a, 9.f + std::sin(t*4.f)*3.f, feuA);
     }
 
-    auto ld = GenererLiane(W-8, H*0.90f, W-8, H*0.08f, 12.f, 3.5f, temps*0.4f+1.5f, true);
-    tracerTige(ld, 2.2f);
-    for (int i = 5; i < (int)ld.size()-5; i += 8) {
+    // Liane droite (Positionnée à X = W - 20)
+    auto ld = GenererLiane(W-20, H*0.90f, W-20, H*0.08f, 15.f, 3.5f, temps*0.4f+1.5f, true);
+    tracerTige(ld, 3.0f);
+    for (int i = 5; i < (int)ld.size()-5; i += 7) {
         float t = (float)i/ld.size();
         float a = 3.141f*0.6f + std::sin(t*5.f+temps+1.f)*0.3f;
-        DessinerFeuille(dl, ld[i].x-10, ld[i].y, -a, 7.f + std::sin(t*4.5f)*3.f, (i%16==5)?feuB:feuA);
+        DessinerFeuille(dl, ld[i].x-12, ld[i].y, -a, 11.f + std::sin(t*4.5f)*4.f, (i%2==0)?feuB:feuA);
+        DessinerFeuille(dl, ld[i].x+12, ld[i].y,  a, 8.f + std::sin(t*4.5f)*3.f, feuA);
     }
 }
 
 // ─────────────────────────────────────────────
-//  WIDGETS CUSTOM (Calendrier & Badges)
+//  WIDGETS CUSTOM (Calendrier)
 // ─────────────────────────────────────────────
 void DessinerCalendrierVisuel(const char* label, int debut, int fin, ImVec4 col) {
     ImGui::TextColored(Couleurs::TexteDoux, "%s", label);
@@ -152,21 +162,19 @@ void DessinerCalendrierVisuel(const char* label, int debut, int fin, ImVec4 col)
         if (debut > 0 && fin > 0) {
             int d = debut - 1, f = fin - 1;
             if (d <= f) on = (i >= d && i <= f);
-            else        on = (i >= d || i <= f); // Cas à cheval sur l'année (ex: Nov à Fev)
+            else        on = (i >= d || i <= f);
         }
         ImVec2 pmin(p.x + i * step + 2, p.y);
-        ImVec2 pmax(p.x + (i + 1) * step - 2, p.y + 18);
+        ImVec2 pmax(p.x + (i + 1) * step - 2, p.y + 20); // Légèrement plus haut
         
-        // Dessin du bloc
         dl->AddRectFilled(pmin, pmax, on ? ImGui::ColorConvertFloat4ToU32(col) : IM_COL32(35,45,35,255), 4.f);
         
-        // Texte du mois
         if (on) {
             ImVec2 tsz = ImGui::CalcTextSize(initMois[i]);
-            dl->AddText(ImVec2(pmin.x + (step - 4 - tsz.x) * 0.5f, pmin.y + 2), IM_COL32(10,20,10,255), initMois[i]);
+            dl->AddText(ImVec2(pmin.x + (step - 4 - tsz.x) * 0.5f, pmin.y + 3), IM_COL32(10,20,10,255), initMois[i]);
         }
     }
-    ImGui::Dummy(ImVec2(0, 24)); // Espace après le widget
+    ImGui::Dummy(ImVec2(0, 26)); 
 }
 
 const char* RusiciteLabel(Rusticite r) {
@@ -193,10 +201,10 @@ ImVec4 CouleurRusticite(Rusticite r) {
 
 ImVec4 CouleurTypePlante(TypePlante t) {
     switch (t) {
-        case TypePlante::AROMATIQUE: return ImVec4(0.4f, 0.8f, 0.5f, 1.0f); // Vert
-        case TypePlante::FRUITIER:   return ImVec4(1.0f, 0.6f, 0.2f, 1.0f); // Orange
-        case TypePlante::FLEUR:      return ImVec4(1.0f, 0.5f, 0.7f, 1.0f); // Rose
-        case TypePlante::LEGUME:     return ImVec4(0.3f, 0.7f, 1.0f, 1.0f); // Bleu
+        case TypePlante::AROMATIQUE: return ImVec4(0.4f, 0.8f, 0.5f, 1.0f); 
+        case TypePlante::FRUITIER:   return ImVec4(1.0f, 0.6f, 0.2f, 1.0f); 
+        case TypePlante::FLEUR:      return ImVec4(1.0f, 0.5f, 0.7f, 1.0f); 
+        case TypePlante::LEGUME:     return ImVec4(0.3f, 0.7f, 1.0f, 1.0f); 
     }
     return Couleurs::TexteDoux;
 }
@@ -222,7 +230,8 @@ int main(int argc, char** argv) {
     float temps = 0.f;
 
     const float LARGEUR_LISTE = 340.f;
-    const float MARGE_LIANE   = 28.f;
+    // On agrandit la marge pour dégager les bords et bien voir les lianes
+    const float MARGE_LIANE   = 45.f; 
 
     while (window.isOpen()) {
         sf::Event event;
@@ -275,7 +284,6 @@ int main(int argc, char** argv) {
         for (int i = 0; i < (int)plantes.size(); i++) {
             const Plante& p = plantes[i];
             
-            // Filtre de recherche
             std::string n = p.nom;
             std::transform(n.begin(), n.end(), n.begin(), ::tolower);
             if (!filtre.empty() && n.find(filtre) == std::string::npos) continue;
@@ -283,7 +291,7 @@ int main(int argc, char** argv) {
             ImGui::PushID(i);
             bool sel  = (indexSelectionne == i);
             ImVec2 pos0 = ImGui::GetCursorScreenPos();
-            ImVec2 sz   = {ImGui::GetContentRegionAvail().x, 58.f}; // Cartes un peu plus hautes
+            ImVec2 sz   = {ImGui::GetContentRegionAvail().x, 58.f}; 
 
             ImGui::InvisibleButton("##c", sz);
             bool hov = ImGui::IsItemHovered();
@@ -291,22 +299,20 @@ int main(int argc, char** argv) {
 
             ImDrawList* dlL = ImGui::GetWindowDrawList();
             
-            // Fond de la carte
             if (sel)       dlL->AddRectFilled(pos0, {pos0.x+sz.x, pos0.y+sz.y}, IM_COL32(25,60,35,255), 8.f);
             else if (hov)  dlL->AddRectFilled(pos0, {pos0.x+sz.x, pos0.y+sz.y}, IM_COL32(20,40,25,200), 8.f);
             else           dlL->AddRectFilled(pos0, {pos0.x+sz.x, pos0.y+sz.y}, IM_COL32(15,22,15,150), 8.f);
             
-            // 🎨 NOUVEAU : Barre de couleur sur le côté gauche selon le Type de plante
             ImVec4 colType = CouleurTypePlante(p.type);
             dlL->AddRectFilled(pos0, {pos0.x + 6.f, pos0.y+sz.y}, ImGui::ColorConvertFloat4ToU32(colType), 8.f, ImDrawFlags_RoundCornersLeft);
 
-            // Textes
             ImVec4 cNom = sel ? Couleurs::Accent : (hov ? Couleurs::Texte : ImVec4(0.85f,0.90f,0.85f,1.f));
             ImGui::SetCursorScreenPos({pos0.x+18, pos0.y+10});
             ImGui::TextColored(cNom, "%s", p.nom.c_str());
             
             ImGui::SetCursorScreenPos({pos0.x+18, pos0.y+32});
-            ImGui::TextColored(CouleurRusticite(p.rusticite), "• %s", RusiciteLabel(p.rusticite));
+            // EMOJI FIX: Remplacé par un tiret simple pour éviter les "?"
+            ImGui::TextColored(CouleurRusticite(p.rusticite), "- %s", RusiciteLabel(p.rusticite));
 
             ImGui::SetCursorScreenPos({pos0.x, pos0.y+sz.y + 4.f});
             ImGui::PopID();
@@ -320,14 +326,16 @@ int main(int argc, char** argv) {
         ImGui::BeginChild("##detail", {largeurDetail, hauteurContenu}, true);
 
         if (indexSelectionne >= 0 && indexSelectionne < (int)plantes.size()) {
-            // Affichage des détails de la plante
             const Plante& p = plantes[indexSelectionne];
 
-            ImGui::TextColored(Couleurs::Accent, "<h2>%s</h2>", p.nom.c_str());
+            // EMOJI FIX & TITRE GROSSI : On utilise SetWindowFontScale pour grossir le texte au lieu de <h2>
+            ImGui::SetWindowFontScale(1.4f);
+            ImGui::TextColored(Couleurs::Accent, "%s", p.nom.c_str());
+            ImGui::SetWindowFontScale(1.0f);
+            
             ImGui::Separator();
             ImGui::Spacing();
 
-            // 📅 NOUVEAU : Le calendrier Visuel !
             if (p.floraison_debut > 0 || p.recolte_debut > 0) {
                 if (p.floraison_debut > 0) 
                     DessinerCalendrierVisuel("Période de Floraison", p.floraison_debut, p.floraison_fin, ImVec4(0.9f, 0.5f, 0.8f, 1.0f));
@@ -336,32 +344,48 @@ int main(int argc, char** argv) {
                     DessinerCalendrierVisuel("Période de Récolte", p.recolte_debut, p.recolte_fin, ImVec4(0.5f, 0.8f, 0.4f, 1.0f));
             }
 
-            // Section Textes (Conseils)
-            ImGui::BeginChild("##scroll_infos", {-1, -1});
-            
-            auto SectionInfo = [&](const char* icon, const char* titre, const char* contenu, ImVec4 color) {
-                if (!contenu || std::strlen(contenu) == 0) return;
-                ImGui::TextColored(color, "%s %s", icon, titre);
-                ImGui::PushStyleColor(ImGuiCol_Text, Couleurs::TexteDoux);
-                ImGui::TextWrapped("%s", contenu);
-                ImGui::PopStyleColor();
-                ImGui::Dummy({0,10});
-            };
+            // NOUVEAU : Système d'onglets pour les conseils
+            if (ImGui::BeginTabBar("OngletsConseils")) {
+                
+                auto SectionInfo = [&](const char* titre, const char* contenu, ImVec4 color) {
+                    if (!contenu || std::strlen(contenu) == 0) return;
+                    ImGui::TextColored(color, "[ %s ]", titre);
+                    ImGui::PushStyleColor(ImGuiCol_Text, Couleurs::TexteDoux);
+                    ImGui::TextWrapped("%s", contenu);
+                    ImGui::PopStyleColor();
+                    ImGui::Dummy({0,10});
+                };
 
-            SectionInfo("🌍", "Terre recommandée", p.conseil_terre.c_str(), ImVec4(0.8f, 0.6f, 0.3f, 1.f));
-            SectionInfo("💧", "Besoins en eau", p.conseil_arrosage.c_str(), ImVec4(0.4f, 0.7f, 1.0f, 1.f));
-            SectionInfo("✂️", "Taille & Entretien", p.conseil_entretien.c_str(), ImVec4(0.5f, 0.8f, 0.5f, 1.f));
-            SectionInfo("🐛", "Maladies & Parasites", p.maladies.c_str(), ImVec4(0.9f, 0.4f, 0.4f, 1.f));
-            
-            ImGui::EndChild();
+                // Onglet 1 : Terre & Eau
+                if (ImGui::BeginTabItem("Sol & Arrosage")) {
+                    ImGui::Spacing();
+                    SectionInfo("Terre recommandée", p.conseil_terre.c_str(), ImVec4(0.8f, 0.6f, 0.3f, 1.f));
+                    SectionInfo("Besoins en eau", p.conseil_arrosage.c_str(), ImVec4(0.4f, 0.7f, 1.0f, 1.f));
+                    ImGui::EndTabItem();
+                }
+
+                // Onglet 2 : Entretien
+                if (ImGui::BeginTabItem("Taille & Entretien")) {
+                    ImGui::Spacing();
+                    SectionInfo("Entretien général", p.conseil_entretien.c_str(), ImVec4(0.5f, 0.8f, 0.5f, 1.f));
+                    ImGui::EndTabItem();
+                }
+
+                // Onglet 3 : Santé
+                if (ImGui::BeginTabItem("Santé & Maladies")) {
+                    ImGui::Spacing();
+                    SectionInfo("Parasites et maladies", p.maladies.c_str(), ImVec4(0.9f, 0.4f, 0.4f, 1.f));
+                    ImGui::EndTabItem();
+                }
+
+                ImGui::EndTabBar();
+            }
         } 
         else {
-            // 🍃 NOUVEAU : Empty State Design
             ImVec2 avail = ImGui::GetContentRegionAvail();
             ImVec2 pos = ImGui::GetCursorScreenPos();
             ImDrawList* dl = ImGui::GetWindowDrawList();
             
-            // Dessin d'une belle feuille au centre
             DessinerFeuille(dl, pos.x + avail.x*0.5f, pos.y + avail.y*0.4f, -3.14f/4.f, 70.f, IM_COL32(35, 60, 40, 255));
             
             const char* msg = "Sélectionnez une plante pour voir son tableau de bord";
@@ -370,10 +394,11 @@ int main(int argc, char** argv) {
             ImGui::TextColored(Couleurs::TexteInactif, "%s", msg);
         }
 
-        ImGui::EndChild(); // Fin du panneau droit
-        ImGui::End(); // Fin fenêtre principale
+        ImGui::EndChild(); 
+        ImGui::End(); 
 
-        window.clear(sf::Color(10,15,10));
+        // Important : Le fond de base est noir, c'est ce qui fait ressortir la transparence
+        window.clear(sf::Color(5, 8, 5));
         ImGui::SFML::Render(window);
         window.display();
     }
