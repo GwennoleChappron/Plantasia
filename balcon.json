@@ -1,0 +1,18 @@
+[
+    { "nom": "Thym", "rusticite": "RUSTIQUE", "exposition_soleil": "PLEIN_SOLEIL", "exposition_vent": "MODERE" },
+    { "nom": "Romarin", "rusticite": "RUSTIQUE", "exposition_soleil": "PLEIN_SOLEIL", "exposition_vent": "MODERE" },
+    { "nom": "Verveine citronnée", "rusticite": "SEMI_RUSTIQUE", "exposition_soleil": "PLEIN_SOLEIL", "exposition_vent": "ABRITE" },
+    { "nom": "Livèche", "rusticite": "RUSTIQUE", "exposition_soleil": "MI_OMBRE", "exposition_vent": "MODERE" },
+    { "nom": "Menthe Bergamote", "rusticite": "RUSTIQUE", "exposition_soleil": "MI_OMBRE", "exposition_vent": "ABRITE" },
+    { "nom": "Menthe Poivrée", "rusticite": "RUSTIQUE", "exposition_soleil": "MI_OMBRE", "exposition_vent": "ABRITE" },
+    { "nom": "Cébette", "rusticite": "RUSTIQUE", "exposition_soleil": "PLEIN_SOLEIL", "exposition_vent": "MODERE" },
+    { "nom": "Groseilles", "rusticite": "RUSTIQUE", "exposition_soleil": "MI_OMBRE", "exposition_vent": "MODERE" },
+    { "nom": "Cassis", "rusticite": "RUSTIQUE", "exposition_soleil": "MI_OMBRE", "exposition_vent": "MODERE" },
+    { "nom": "Coriandre", "rusticite": "FRAGILE", "exposition_soleil": "MI_OMBRE", "exposition_vent": "ABRITE" },
+    { "nom": "Persil plat", "rusticite": "RUSTIQUE", "exposition_soleil": "MI_OMBRE", "exposition_vent": "ABRITE" },
+    { "nom": "Yuzu n°30", "rusticite": "SEMI_RUSTIQUE", "exposition_soleil": "PLEIN_SOLEIL", "exposition_vent": "ABRITE" },
+    { "nom": "Poivrier de Sansho", "rusticite": "RUSTIQUE", "exposition_soleil": "MI_OMBRE", "exposition_vent": "ABRITE" },
+    { "nom": "Laurier (comestible)", "rusticite": "SEMI_RUSTIQUE", "exposition_soleil": "PLEIN_SOLEIL", "exposition_vent": "MODERE" },
+    { "nom": "Origan", "rusticite": "RUSTIQUE", "exposition_soleil": "PLEIN_SOLEIL", "exposition_vent": "MODERE" },
+    { "nom": "Estragon", "rusticite": "RUSTIQUE", "exposition_soleil": "PLEIN_SOLEIL", "exposition_vent": "ABRITE" }
+]
