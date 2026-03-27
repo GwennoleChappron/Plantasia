@@ -15,7 +15,6 @@ FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git G
 FetchContent_MakeAvailable(imgui)
 
 # --- Sources ---
-# Le _RECURSE est magique : il fouille dans src/Core, src/States, src/Data, etc.
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 set(IMGUI_SOURCES
@@ -26,21 +25,22 @@ set(IMGUI_SOURCES
     "external/imgui-sfml/imgui-SFML.cpp" 
 )
 
-add_executable(Plantasia ${SOURCES} ${IMGUI_SOURCES})
+# On compile tout, y compris notre nouveau fichier glad.c !
+add_executable(Plantasia ${SOURCES} ${IMGUI_SOURCES} "external/glad/src/glad.c")
 
 # --- LES CHEMINS D'INCLUSION ---
 target_include_directories(Plantasia PUBLIC 
-    src                              # <--- L'AJOUT CRUCIAL pour faire #include "Core/State.hpp"
-    external                         # Pour trouver nlohmann/json.hpp
-    external/imgui-sfml              # Pour trouver imgui-SFML.h
-    ${imgui_SOURCE_DIR}              # Pour trouver imgui.h
-    ${imgui_SOURCE_DIR}/backends     # Pour certains headers imgui
+    src                              
+    external                         
+    external/imgui-sfml              
+    ${imgui_SOURCE_DIR}              
+    ${imgui_SOURCE_DIR}/backends     
+    external/glad/include            # <--- On dit au compilo où trouver <glad/glad.h>
 )
 
 # --- Liens ---
 find_package(OpenGL REQUIRED)
 
-# On lie d'abord toutes les librairies communes à tous les systèmes
 target_link_libraries(Plantasia 
     sfml-graphics 
     sfml-window 
@@ -50,7 +50,6 @@ target_link_libraries(Plantasia
     OpenGL::GL
 )
 
-# On ajoute sfml-main UNIQUEMENT si on est sur Windows
 if(WIN32)
     target_link_libraries(Plantasia sfml-main)
 endif()

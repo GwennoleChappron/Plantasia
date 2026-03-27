@@ -46,6 +46,8 @@ void Application::run() {
             m_stateMachine.getActiveState()->drawImGui();
         }
 
+        m_background->drawImGui();
+
         ImGui::SFML::Render(m_window);
         m_window.display();
     }

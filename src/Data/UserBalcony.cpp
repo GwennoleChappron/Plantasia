@@ -11,20 +11,22 @@ bool UserBalcony::chargerProfil(const std::string& filepath) {
         file >> j;
         
         m_myPlants.clear();
-        m_myWalls.clear();
 
-        // Chargement des plantes (comme avant)
+        // Chargement des plantes
         if (j.contains("plantes")) {
             for (const auto& item : j["plantes"]) {
                 m_myPlants.push_back(item.get<UserPlant>());
             }
         }
         
-        // --- NOUVEAU : Chargement des murs ---
-        if (j.contains("murs")) {
-            for (const auto& item : j["murs"]) {
-                m_myWalls.push_back(item.get<sf::Vector2i>());
-            }
+        // --- CORRECTION : Chargement de toute l'architecture ---
+        if (j.contains("architecture")) {
+            m_balconyConfig = j["architecture"].get<BalconyConfig>();
+        } else {
+            // Profil vierge : on initialise une grille par défaut (40x30)
+            m_balconyConfig.width = 40;
+            m_balconyConfig.height = 30;
+            m_balconyConfig.grid.assign(30, std::vector<GridCell>(40));
         }
         
         return true;
@@ -38,11 +40,10 @@ bool UserBalcony::sauvegarderProfil(const std::string& filepath) const {
     std::ofstream file(filepath);
     if (!file.is_open()) return false;
 
-    // --- NOUVEAU : Structure de sauvegarde composite ---
     nlohmann::json j;
     j["plantes"] = m_myPlants;
-    j["murs"] = m_myWalls; // On sauvegarde le vecteur de murs d'un coup !
+    j["architecture"] = m_balconyConfig; // <-- MAGIE : JSON sauvegarde tout l'objet et sa grille
     
-    file << j.dump(4); // Indentation de 4 espaces pour la lisibilité
+    file << j.dump(4); 
     return true;
 }
