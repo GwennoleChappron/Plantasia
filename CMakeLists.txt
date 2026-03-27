@@ -15,7 +15,8 @@ FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git G
 FetchContent_MakeAvailable(imgui)
 
 # --- Sources ---
-file(GLOB SOURCES "src/*.cpp")
+# Le _RECURSE est magique : il fouille dans src/Core, src/States, src/Data, etc.
+file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 set(IMGUI_SOURCES
     ${imgui_SOURCE_DIR}/imgui.cpp
@@ -27,27 +28,29 @@ set(IMGUI_SOURCES
 
 add_executable(Plantasia ${SOURCES} ${IMGUI_SOURCES})
 
-# --- LES CHEMINS CRUCIAUX (Le fix est ici) ---
+# --- LES CHEMINS D'INCLUSION ---
 target_include_directories(Plantasia PUBLIC 
-    include 
+    src                              # <--- L'AJOUT CRUCIAL pour faire #include "Core/State.hpp"
     external                         # Pour trouver nlohmann/json.hpp
-    external/imgui-sfml             # Pour trouver imgui-SFML.h
+    external/imgui-sfml              # Pour trouver imgui-SFML.h
     ${imgui_SOURCE_DIR}              # Pour trouver imgui.h
     ${imgui_SOURCE_DIR}/backends     # Pour certains headers imgui
 )
 
 # --- Liens ---
 find_package(OpenGL REQUIRED)
-# Note : sfml-audio est facultatif mais présent dans ta compilation
-# --- Liens ---
-find_package(OpenGL REQUIRED)
 
+# On lie d'abord toutes les librairies communes à tous les systèmes
 target_link_libraries(Plantasia 
     sfml-graphics 
     sfml-window 
     sfml-audio 
     sfml-network
     sfml-system 
-    sfml-main        # <--- AJOUT CRUCIAL ICI
     OpenGL::GL
 )
+
+# On ajoute sfml-main UNIQUEMENT si on est sur Windows
+if(WIN32)
+    target_link_libraries(Plantasia sfml-main)
+endif()
