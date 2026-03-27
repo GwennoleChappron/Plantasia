@@ -26,6 +26,9 @@ struct BalconyConfig {
     int   day = 27;
     float hour = 12.0f;
 
+    bool hasRoof = false; //
+    float roofOpacity = 0.8f;
+
     // --- GRILLE DYNAMIQUE ---
     // On utilise un vector de vector pour pouvoir changer la taille plus tard
     std::vector<std::vector<GridCell>> grid;

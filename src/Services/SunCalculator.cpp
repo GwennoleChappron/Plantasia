@@ -33,33 +33,51 @@ SunPosition SunCalculator::compute(const BalconyConfig& cfg) {
 bool SunCalculator::isInShadow(const BalconyConfig& cfg, int tx, int ty, const SunPosition& sun) {
     if (!sun.isAboveHorizon()) return true;
 
-    float cellSizeM = 0.05f; // Tes 5cm par case
-    
-    // Direction du rayon arrivant au sol (inverse de l'azimut soleil)
-    // On ajuste selon l'orientation du balcon
+    float cellSizeM = 0.05f; // 5cm
     float bAz = static_cast<float>(cfg.orientation) * 45.0f;
     float relAz = toRad(sun.azimuth - bAz);
     
-    sf::Vector2f dir(-std::sin(relAz), std::cos(relAz));
+    // Vecteur horizontal du rayon de soleil
+    sf::Vector2f sunDir(-std::sin(relAz), std::cos(relAz));
     float tanElev = std::tan(toRad(sun.elevation));
 
-    // On remonte le rayon pour voir s'il tape un mur
-    for (float distCase = 1.0f; distCase < 100.0f; distCase += 1.0f) {
-        int cx = tx + static_cast<int>(dir.x * distCase);
-        int cy = ty + static_cast<int>(dir.y * distCase);
+    // --- 1. CALCUL DE L'OMBRE DU TOIT (3D) ---
+    if (cfg.hasRoof) {
+        float hPlafond = 2.5f; // Hauteur du balcon supérieur en mètres
+        
+        // Distance horizontale que le rayon parcourt pour descendre du plafond au sol
+        // distHoriz = hauteur / tan(elevation)
+        float distHorizM = hPlafond / tanElev;
+        
+        // Position "source" sur le plafond qui projette son ombre sur (tx, ty)
+        // On remonte le rayon : PosToit = PosSol + (DirectionSoleil * distHoriz)
+        float sourceX = (tx * cellSizeM) + (sunDir.x * distHorizM);
+        float sourceY = (ty * cellSizeM) + (sunDir.y * distHorizM);
+
+        // Si la source est située à l'intérieur des limites du plafond (le balcon du dessus)
+        // On considère que le plafond couvre toute la surface GRID_W * GRID_H
+        if (sourceX >= 0 && sourceX < cfg.width * cellSizeM &&
+            sourceY >= 0 && sourceY < cfg.height * cellSizeM) {
+            return true; 
+        }
+    }
+
+    // --- 2. CALCUL DES MURS (Ray-casting 2D) ---
+    for (float d = 1.0f; d < 100.0f; d += 1.0f) {
+        int cx = tx + static_cast<int>(sunDir.x * d);
+        int cy = ty + static_cast<int>(sunDir.y * d);
 
         if (cx < 0 || cx >= cfg.width || cy < 0 || cy >= cfg.height) break;
 
         const auto& cell = cfg.grid[cy][cx];
         if (cell.isWall) {
-            // Un mur fait de l'ombre si : hauteur / distance > tan(elevation)
-            float distMetres = distCase * cellSizeM;
+            float distMetres = d * cellSizeM;
             if (cell.wallHeight / distMetres > tanElev) return true;
         }
     }
+
     return false;
 }
-
 void SunCalculator::computeDailySunMap(BalconyConfig& cfg) {
     for (auto& row : cfg.grid) for (auto& c : row) c.sunHours = 0.0f;
 

@@ -6,25 +6,26 @@
 
 class StateBalconySim : public State {
 private:
-    // --- Données de Simulation ---
     BalconyConfig m_cfg;
     SunPosition   m_sun;           
     bool          m_sunMapDirty = true;  
 
-    // --- Paramètres d'Affichage ---
     int  m_editMode = 0;            
+    int  m_selectedPlantIndex = -1; // <--- AJOUTÉ
     bool m_showSunMap    = false;   
     bool m_showShadows   = true;    
-    const float CELL_PX  = 15.0f;   // On reste sur tes 15px par case
+    const float CELL_PX  = 15.0f;   
 
-    // --- Méthodes Internes ---
     void handleInput();
     void drawCompass();              
     void recalcSun();
     void markSunMapDirty();
-    void renderGrid(sf::RenderWindow& window);
-    void renderShadowLayer(sf::RenderWindow& window);
-    void renderSunMapLayer(sf::RenderWindow& window);
+
+    // MISES À JOUR : Ajout de l'argument sf::Vector2f offset
+    void renderGrid(sf::RenderWindow& window, sf::Vector2f offset);
+    void renderShadowLayer(sf::RenderWindow& window, sf::Vector2f offset);
+    void renderSunMapLayer(sf::RenderWindow& window, sf::Vector2f offset);
+    void renderPlants(sf::RenderWindow& window, sf::Vector2f offset); // <--- AJOUTÉ
 
 public:
     StateBalconySim(Application* app);
