@@ -3,63 +3,45 @@
 
 ParticleSystem::ParticleSystem(int maxParticles) {
     m_particles.reserve(maxParticles);
-    m_vertices.setPrimitiveType(sf::Quads); // Chaque particule est un carré (4 sommets)
-    m_vertices.resize(maxParticles * 4);
+    m_vertices.setPrimitiveType(sf::Quads);
 }
 
-void ParticleSystem::emit(sf::Vector2f pos, sf::Vector2f vel, sf::Color col, float lifetime, float size) {
-    if (m_particles.size() >= m_particles.capacity()) return;
-
-    Particle p;
-    p.pos = pos;
-    p.vel = vel;
-    p.color = col;
-    p.lifetime = p.maxLifetime = lifetime;
-    p.size = size;
-    m_particles.push_back(p);
+void ParticleSystem::emit(sf::Vector2f pos, sf::Vector2f vel,
+                          sf::Color col, float lifetime, float size) {
+    if ((int)m_particles.size() >= (int)m_particles.capacity()) return;
+    m_particles.push_back({pos, vel, col, lifetime, lifetime, size});
 }
 
 void ParticleSystem::update(float dt) {
-    // On efface le VertexArray
-    for (int i = 0; i < m_vertices.getVertexCount(); i++) {
-        m_vertices[i].color = sf::Color::Transparent;
-    }
-
-    // Mise à jour de chaque particule
-    for (int i = 0; i < m_particles.size(); i++) {
+    for (int i = 0; i < (int)m_particles.size(); ) {
         auto& p = m_particles[i];
-        
         p.lifetime -= dt;
-
-        // Si la particule est morte, on l'enlève
-        if (p.lifetime <= 0.0f) {
-            m_particles.erase(m_particles.begin() + i);
-            i--; // On recule l'index pour compenser
+        if (p.lifetime <= 0.f) {
+            m_particles[i] = m_particles.back();
+            m_particles.pop_back();
             continue;
         }
-
-        // Physique simple (vitesse)
         p.pos += p.vel * dt;
+        p.vel.y += 40.f * dt; // gravité légère
+        p.color.a = (sf::Uint8)(255.f * p.lifetime / p.maxLifetime);
+        ++i;
+    }
 
-        // Calcul de l'alpha (transparence) pour l'estompement
-        float ratio = p.lifetime / p.maxLifetime;
-        p.color.a = static_cast<sf::Uint8>(255 * ratio);
-
-        // Mise à jour des sommets du VertexArray
-        int vIdx = i * 4;
-        m_vertices[vIdx].position = p.pos;
-        m_vertices[vIdx + 1].position = p.pos + sf::Vector2f(p.size, 0);
-        m_vertices[vIdx + 2].position = p.pos + sf::Vector2f(p.size, p.size);
-        m_vertices[vIdx + 3].position = p.pos + sf::Vector2f(0, p.size);
-
-        for (int j = 0; j < 4; j++) {
-            m_vertices[vIdx + j].color = p.color;
-        }
+    int n = (int)m_particles.size();
+    m_vertices.resize(n * 4);
+    for (int i = 0; i < n; ++i) {
+        const auto& p = m_particles[i];
+        int v = i * 4;
+        m_vertices[v+0].position = p.pos;
+        m_vertices[v+1].position = p.pos + sf::Vector2f(p.size, 0);
+        m_vertices[v+2].position = p.pos + sf::Vector2f(p.size, p.size);
+        m_vertices[v+3].position = p.pos + sf::Vector2f(0, p.size);
+        for (int j = 0; j < 4; ++j) m_vertices[v+j].color = p.color;
     }
 }
 
 void ParticleSystem::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     states.transform *= getTransform();
-    states.texture = nullptr; // Pas de texture pour l'instant
+    states.texture = nullptr;
     target.draw(m_vertices, states);
 }

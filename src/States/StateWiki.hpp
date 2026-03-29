@@ -9,6 +9,10 @@ class StateWiki : public State {
 private:
     std::string m_planteSelectionnee; // Le nom de la plante cliquée
     char m_filtreRecherche[128] = {};
+    std::map<std::string, sf::Texture> m_plantIconTextures;
+    int m_modeAffichage = 0; // 0 = Plantes, 1 = Sols
+    std::string m_solSelectionne;
+    void chargerTextures();
 
     // Helper pour le calendrier
     void DessinerCalendrierVisuel(const char* label, int debut, int fin, ImVec4 col);

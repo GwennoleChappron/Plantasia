@@ -17,28 +17,32 @@ void StateBalconySim::onEnter() {
     m_newW = m_cfg.width;
     m_newH = m_cfg.height;
     
-    // Initialisation du moteur OpenGL
     m_sunGPU.init(m_cfg.width, m_cfg.height);
+    
+    for (const auto& p : m_app->getUserBalcony().getMesPlantes()) {
+        if (m_plantTextures.find(p.nom_espece) == m_plantTextures.end()) {
+            sf::Texture tex;
+            tex.loadFromFile("assets/" + p.nom_espece + "_icon.png"); 
+            m_plantTextures[p.nom_espece] = tex;
+        }
+    }
 
     recalcSun();
     updateGridVertices();
     markSunMapDirty();
-    
-    // On centre la caméra pour tout voir d'un coup
     frameCamera();
 }
 
 void StateBalconySim::onExit() {}
 
 void StateBalconySim::update(float dt) {
-    // Toujours mettre à jour les plantes avant de calculer la lumière !
     bakePlantsIntoGrid(); 
 
     if (m_sunMapDirty) {
         if (m_cfg.width != m_newW || m_cfg.height != m_newH) {
             m_sunGPU.resize(m_cfg.width, m_cfg.height);
         }
-        m_sunGPU.compute(m_cfg); 
+        m_sunGPU.compute(m_cfg,20); 
         m_sunMapDirty = false;
     }
     handleInput();
@@ -52,17 +56,15 @@ void StateBalconySim::frameCamera() {
     float gridW = m_cfg.width * CELL_PX;
     float gridH = m_cfg.height * CELL_PX;
     
-    // On pointe la caméra vers le centre du balcon
     m_cameraPos = sf::Vector2f(gridW / 2.0f, gridH / 2.0f); 
 
     auto& win = m_app->getWindow();
     float winW = (float)win.getSize().x;
     float winH = (float)win.getSize().y;
 
-    // Calcul du zoom pour que ça rentre avec une petite marge
     float zoomX = winW / (gridW + 100.0f);
     float zoomY = winH / (gridH + 100.0f);
-    m_cameraZoom = std::min({1.5f, zoomX, zoomY}); // Ne zoome jamais trop près
+    m_cameraZoom = std::min({1.5f, zoomX, zoomY});
 }
 
 void StateBalconySim::updateGridVertices() {
@@ -83,11 +85,13 @@ void StateBalconySim::updateGridVertices() {
             sf::Color col;
             if (cell.isWall()) {
                 float t = std::clamp((cell.wallHeight - 0.5f) / 3.5f, 0.f, 1.f);
-                col = sf::Color(80+(int)(t*60), 60, 30);      // brun → brun clair selon hauteur
+                col = sf::Color(80+(int)(t*60), 60, 30);      
             } else if (cell.isRailing()) {
-                col = sf::Color(60, 100, 120);                 // bleu-gris = rambarde
+                col = sf::Color(60, 100, 120);                
+            } else if (cell.isGlass()) {
+                col = sf::Color(150, 220, 255); // NOUVEAU : Vitre = Bleu clair lumineux             
             } else {
-                col = sf::Color(45, 50, 45);                   // sol béton
+                col = sf::Color(45, 50, 45);                  
             }
             for (int i=0;i<4;i++) m_gridVA[idx+i].color = col;
         }
@@ -102,12 +106,10 @@ void StateBalconySim::handleInput() {
     auto& win = m_app->getWindow();
     sf::Vector2i mPos = sf::Mouse::getPosition(win);
 
-    // On reconstitue la Caméra pour lire les bonnes coordonnées de la souris
     sf::View view = win.getDefaultView();
     view.setCenter(m_cameraPos);
     view.setSize(view.getSize().x / m_cameraZoom, view.getSize().y / m_cameraZoom);
 
-    // --- DÉPLACEMENT DE LA CAMÉRA (Clic Molette) ---
     if (sf::Mouse::isButtonPressed(sf::Mouse::Middle)) {
         if (!m_isPanning) {
             m_isPanning = true;
@@ -126,40 +128,100 @@ void StateBalconySim::handleInput() {
 
     bool lmb = sf::Mouse::isButtonPressed(sf::Mouse::Left);
     bool rmb = sf::Mouse::isButtonPressed(sf::Mouse::Right);
-    if (!lmb && !rmb) return;
 
-    // --- LECTURE DU CLIC SUR LA GRILLE ---
     sf::Vector2f worldPos = win.mapPixelToCoords(mPos, view);
-    int gx = static_cast<int>(worldPos.x / CELL_PX);
-    int gy = static_cast<int>(worldPos.y / CELL_PX);
+    auto& plantes = m_app->getUserBalcony().getMesPlantesRef();
 
-    if (gx < 0 || gx >= m_cfg.width || gy < 0 || gy >= m_cfg.height) return;
-
-    bool modified = false;
-    auto& cell = m_cfg.grid[gy][gx];
-
-    if (m_editMode == EditMode::MUR) {
-        if (lmb) { cell.type = WallType::WALL;   cell.wallHeight = m_cfg.defaultWallHeight;   modified = true; }
-        if (rmb) { cell.type = WallType::NONE;    modified = true; }
-    }
-    else if (m_editMode == EditMode::RAMBARDE) {
-        if (lmb) { cell.type = WallType::RAILING; cell.wallHeight = m_cfg.defaultRailingHeight; modified = true; }
-        if (rmb) { cell.type = WallType::NONE;    modified = true; }
-    }
-    else if (m_editMode == EditMode::PLANTE && m_selectedPlantIdx >= 0) {
-        auto& plantes = m_app->getUserBalcony().getMesPlantesRef();
-        if (lmb && !cell.isObstacle())
-            plantes[m_selectedPlantIdx].position_balcon = sf::Vector2f(gx*CELL_PX, gy*CELL_PX);
-        if (rmb)
-            plantes[m_selectedPlantIdx].position_balcon = sf::Vector2f(-100.f,-100.f);
-        m_app->getUserBalcony().sauvegarderProfil("mon_balcon.json");
+    m_hoveredPlantIdx = -1;
+    for (int i = (int)plantes.size() - 1; i >= 0; i--) {
+        auto& p = plantes[i];
+        if (p.position_balcon.x >= 0.0f) {
+            float radius = std::max(CELL_PX * 0.4f, std::sqrt((float)p.volume_pot_actuel_L) * 2.0f);
+            float dx = worldPos.x - p.position_balcon.x;
+            float dy = worldPos.y - p.position_balcon.y;
+            
+            if ((dx * dx + dy * dy) <= (radius * radius)) {
+                m_hoveredPlantIdx = i; 
+                break;
+            }
+        }
     }
 
-    if (modified) {
-        updateGridVertices();
-        markSunMapDirty();
-        m_app->getUserBalcony().getBalconyConfigRef() = m_cfg;
-        m_app->getUserBalcony().sauvegarderProfil("mon_balcon.json");
+    if (m_editMode == EditMode::PLANTE) {
+        if (lmb) {
+            if (m_draggedPlantIdx == -1) {
+                if (m_hoveredPlantIdx != -1) {
+                    m_draggedPlantIdx = m_hoveredPlantIdx;
+                    m_selectedPlantIdx = m_hoveredPlantIdx;
+                    m_dragOffset = plantes[m_hoveredPlantIdx].position_balcon - worldPos; 
+                }
+                else if (m_selectedPlantIdx >= 0 && m_selectedPlantIdx < (int)plantes.size()) {
+                    plantes[m_selectedPlantIdx].position_balcon = worldPos;
+                    m_draggedPlantIdx = m_selectedPlantIdx;
+                    m_dragOffset = sf::Vector2f(0, 0);
+                }
+            } else {
+                plantes[m_draggedPlantIdx].position_balcon = worldPos + m_dragOffset;
+            }
+        } else {
+            if (m_draggedPlantIdx != -1) {
+                m_draggedPlantIdx = -1;
+                m_app->getUserBalcony().sauvegarderProfil("mon_balcon.json");
+            }
+        }
+
+        if (rmb && m_hoveredPlantIdx != -1) {
+            plantes[m_hoveredPlantIdx].position_balcon = sf::Vector2f(-100.f, -100.f);
+            m_app->getUserBalcony().sauvegarderProfil("mon_balcon.json");
+        }
+    }
+    else {
+        m_draggedPlantIdx = -1;
+        if (!lmb && !rmb) return; 
+
+        int gx = static_cast<int>(worldPos.x / CELL_PX);
+        int gy = static_cast<int>(worldPos.y / CELL_PX);
+        if (gx < 0 || gx >= m_cfg.width || gy < 0 || gy >= m_cfg.height) return;
+
+        bool isPlantHere = false;
+        sf::Vector2f cellCenter((gx + 0.5f) * CELL_PX, (gy + 0.5f) * CELL_PX);
+        
+        for (const auto& p : plantes) {
+            if (p.position_balcon.x >= 0.0f) { 
+                float radius = std::max(CELL_PX * 0.4f, std::sqrt((float)p.volume_pot_actuel_L) * 2.0f);
+                float dx = cellCenter.x - p.position_balcon.x;
+                float dy = cellCenter.y - p.position_balcon.y;
+                
+                if ((dx * dx + dy * dy) <= (radius * radius)) {
+                    isPlantHere = true;
+                    break;
+                }
+            }
+        }
+
+        bool modified = false;
+        auto& cell = m_cfg.grid[gy][gx];
+
+        if (m_editMode == EditMode::MUR) {
+            if (lmb && !isPlantHere) { cell.type = WallType::WALL; cell.wallHeight = m_cfg.defaultWallHeight; modified = true; }
+            if (rmb) { cell.type = WallType::NONE; modified = true; }
+        }
+        else if (m_editMode == EditMode::RAMBARDE) {
+            if (lmb && !isPlantHere) { cell.type = WallType::RAILING; cell.wallHeight = m_cfg.defaultRailingHeight; modified = true; }
+            if (rmb) { cell.type = WallType::NONE; modified = true; }
+        }
+        // NOUVEAU: Ajout des vitres
+        else if (m_editMode == EditMode::VITRE) {
+            if (lmb && !isPlantHere) { cell.type = WallType::GLASS; cell.wallHeight = m_cfg.defaultGlassHeight; modified = true; }
+            if (rmb) { cell.type = WallType::NONE; modified = true; }
+        }
+
+        if (modified) {
+            updateGridVertices();
+            markSunMapDirty();
+            m_app->getUserBalcony().getBalconyConfigRef() = m_cfg;
+            m_app->getUserBalcony().sauvegarderProfil("mon_balcon.json");
+        }
     }
 }
 
@@ -174,14 +236,65 @@ void StateBalconySim::draw(sf::RenderWindow& window) {
     view.setSize(view.getSize().x / m_cameraZoom, view.getSize().y / m_cameraZoom);
     window.setView(view);
 
-    // 2. On dessine la scène (sans offset)
+    // 2. Le fond
     renderGrid(window);
-    if (m_showSunMap)    renderSunMapLayer(window);
-    if (m_showShadows)   renderShadowLayer(window);
+
+    // --- CORRECTION : LE NOUVEL ORDRE ---
+
+    // 3. On dessine d'abord l'ombre portée du balcon (le noir)
+    if (m_showShadows) renderShadowLayer(window);
+
+    // 4. On dessine ensuite la Heatmap (qui contient les reflets de vitre)
+    // Elle va venir "éclairer" les zones d'ombre !
+    if (m_showSunMap) renderSunMapLayer(window);
+
+    // 5. Les plantes par-dessus
     renderPlants(window);
 
-    // 3. On remet la caméra par défaut pour l'UI ImGui (très important)
+    // 3. On remet la caméra par défaut pour l'UI ImGui
     window.setView(window.getDefaultView());
+}
+
+void StateBalconySim::renderShadowLayer(sf::RenderWindow& window) {
+    if (!m_sun.isAboveHorizon()) return;
+
+    // 1. Tableau de pixels (1 pixel = 1 case)
+    std::vector<sf::Uint8> pixels(m_cfg.width * m_cfg.height * 4, 0);
+
+    for (int r = 0; r < m_cfg.height; ++r) {
+        for (int c = 0; c < m_cfg.width; ++c) {
+            int idx = (r * m_cfg.width + c) * 4;
+            
+            float soft = SunCalculator::softShadow(m_cfg, c, r, m_sun);
+            
+            // Intensité de l'ombre (max 170/255 pour qu'elle reste translucide)
+            sf::Uint8 alpha = (sf::Uint8)((1.0f - soft) * 170.f); 
+
+            // Teinte bleutée réaliste de l'ombre
+            pixels[idx + 0] = 15;    // Rouge
+            pixels[idx + 1] = 20;    // Vert
+            pixels[idx + 2] = 40;    // Bleu
+            pixels[idx + 3] = alpha; // Transparence
+            
+            // Optionnel : un peu moins d'ombre sur les murs/plantes
+            if (m_cfg.grid[r][c].isObstacle()) {
+                pixels[idx + 3] = alpha / 2;
+            }
+        }
+    }
+
+    static sf::Texture shadowTex;
+    if (shadowTex.getSize().x != m_cfg.width || shadowTex.getSize().y != m_cfg.height) {
+        shadowTex.create(m_cfg.width, m_cfg.height);
+        shadowTex.setSmooth(true); // Flou doux sur les bords
+    }
+    shadowTex.update(pixels.data());
+
+    sf::Sprite shadowSpr(shadowTex);
+    shadowSpr.setScale(CELL_PX, CELL_PX);
+    
+    // On dessine l'ombre en mode Alpha classique
+    window.draw(shadowSpr, sf::BlendAlpha);
 }
 
 void StateBalconySim::renderGrid(sf::RenderWindow& window) {
@@ -216,29 +329,7 @@ void StateBalconySim::renderSunMapLayer(sf::RenderWindow& window) {
     spr.setPosition(0.f, 0.f);
     spr.setScale(CELL_PX, CELL_PX);
     
-    // Le GPU a déjà calculé les bonnes couleurs et transparences
     window.draw(spr, sf::BlendAlpha);
-}
-
-void StateBalconySim::renderPlants(sf::RenderWindow& window) {
-    sf::CircleShape sh;
-    const auto& plantes = m_app->getUserBalcony().getMesPlantes();
-
-    for (int i = 0; i < (int)plantes.size(); ++i) {
-        const auto& p = plantes[i];
-        if (p.position_balcon.x < 0) continue;
-
-        float radius = std::max(CELL_PX*0.4f, std::sqrt((float)p.volume_pot_actuel_L)*2.f);
-        sh.setRadius(radius);
-        sh.setOrigin(radius, radius);
-        sh.setPosition(p.position_balcon.x + CELL_PX*0.5f, p.position_balcon.y + CELL_PX*0.5f);
-
-        bool sel = (m_editMode==EditMode::PLANTE && m_selectedPlantIdx==i);
-        sh.setFillColor(sel ? sf::Color(100,255,120) : sf::Color(60,150,80));
-        sh.setOutlineThickness(sel ? 2.f : 1.f);
-        sh.setOutlineColor(sel ? sf::Color::White : sf::Color(30,90,40));
-        window.draw(sh);
-    }
 }
 
 // ============================================================
@@ -266,9 +357,10 @@ void StateBalconySim::drawImGui() {
 
     // ── OUTILS
     if (ImGui::CollapsingHeader("Outils", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const char* modes[] = {"Mur","Observer","Plante","Rambarde"};
+        // NOUVEAU: "Vitre" ajouté au tableau
+        const char* modes[] = {"Mur", "Observer", "Plante", "Rambarde", "Vitre"};
         int m = (int)m_editMode;
-        if (ImGui::Combo("Mode", &m, modes, 4)) m_editMode = (EditMode)m;
+        if (ImGui::Combo("Mode", &m, modes, 5)) m_editMode = (EditMode)m;
 
         if (m_editMode == EditMode::MUR) {
             if (ImGui::SliderFloat("H. mur", &m_cfg.defaultWallHeight, 0.5f, 5.0f, "%.1f m"))
@@ -276,6 +368,11 @@ void StateBalconySim::drawImGui() {
         }
         if (m_editMode == EditMode::RAMBARDE) {
             if (ImGui::SliderFloat("H. rambarde", &m_cfg.defaultRailingHeight, 0.3f, 1.5f, "%.1f m"))
+                markSunMapDirty();
+        }
+        // NOUVEAU : Slider pour la Vitre
+        if (m_editMode == EditMode::VITRE) {
+            if (ImGui::SliderFloat("H. vitre", &m_cfg.defaultGlassHeight, 0.5f, 5.0f, "%.1f m"))
                 markSunMapDirty();
         }
         if (m_editMode == EditMode::PLANTE) {
@@ -306,15 +403,14 @@ void StateBalconySim::drawImGui() {
         ImGui::TextColored({0.5f,0.5f,0.5f,1.f}, "(1 case = 5x5 cm | %dx%d cm)",
             m_newW*5, m_newH*5);
         
-        // BOUTON MAGIQUE POUR LE REDIMENSIONNEMENT
         if (ImGui::Button("Appliquer dimensions")) {
             m_cfg.resize(m_newW, m_newH);
-            m_sunGPU.resize(m_newW, m_newH); // Préviens la carte graphique !
+            m_sunGPU.resize(m_newW, m_newH); 
             updateGridVertices();
             markSunMapDirty();
             m_app->getUserBalcony().getBalconyConfigRef() = m_cfg;
             m_app->getUserBalcony().sauvegarderProfil("mon_balcon.json");
-            frameCamera(); // Recadre l'écran
+            frameCamera(); 
         }
     }
 
@@ -344,8 +440,37 @@ void StateBalconySim::drawImGui() {
             ImGui::TextColored({1.0f, 0.31f,0.08f,1.f}, "■"); ImGui::SameLine(); ImGui::Text("> 6h (plein soleil)");
         }
     }
-
     ImGui::End();
+
+    // ========================================================
+    //  BULLE DE SURVOL DE PLANTE
+    // ========================================================
+    if (m_hoveredPlantIdx >= 0 && m_hoveredPlantIdx < (int)m_app->getUserBalcony().getMesPlantes().size()) {
+        const auto& p = m_app->getUserBalcony().getMesPlantes()[m_hoveredPlantIdx];
+
+        ImVec2 windowPos = ImVec2(ImGui::GetIO().DisplaySize.x - 50.0f, 50.0f);
+        ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(1.0f, 0.0f)); 
+        ImGui::SetNextWindowBgAlpha(0.85f);
+
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | 
+                                 ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | 
+                                 ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing;
+
+        ImGui::Begin("HoverBubble", nullptr, flags);
+        
+        if (m_plantTextures.count(p.nom_espece)) {
+            sf::Texture& tex = m_plantTextures[p.nom_espece];
+            ImVec2 imgSize(tex.getSize().x, tex.getSize().y);
+            ImGui::SetCursorPosX((ImGui::GetWindowSize().x - imgSize.x) * 0.5f);
+            ImGui::Image((ImTextureID)(intptr_t)tex.getNativeHandle(), imgSize);
+        }
+
+        ImGui::Spacing();
+        ImGui::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "%s", p.surnom.c_str());
+        ImGui::TextDisabled("Pot de %d Litres", p.volume_pot_actuel_L);
+
+        ImGui::End();
+    }
 }
 
 void StateBalconySim::drawCompass() {
@@ -383,8 +508,8 @@ void StateBalconySim::drawCompass() {
     ImGui::Dummy({140, 140});
     ImGui::TextColored({0.5f,0.5f,0.5f,1.f}, "Orientation: %s", labels[(int)m_cfg.orientation]);
 }
+
 void StateBalconySim::bakePlantsIntoGrid() {
-    // 1. On efface les données de plantes du tour précédent
     for (int r = 0; r < m_cfg.height; ++r) {
         for (int c = 0; c < m_cfg.width; ++c) {
             m_cfg.grid[r][c].plantHeight = 0.0f;
@@ -392,25 +517,20 @@ void StateBalconySim::bakePlantsIntoGrid() {
         }
     }
 
-    // 2. On dessine les plantes "virtuellement" sur la grille
     const auto& plantes = m_app->getUserBalcony().getMesPlantes();
     for (const auto& p : plantes) {
         if (p.position_balcon.x < 0.0f) continue;
 
-        // Position de la plante en cases
-        float px_center = (p.position_balcon.x / CELL_PX) + 0.5f;
-        float py_center = (p.position_balcon.y / CELL_PX) + 0.5f;
+        float px_center = p.position_balcon.x / CELL_PX;
+        float py_center = p.position_balcon.y / CELL_PX;
 
-        // On estime la taille du feuillage selon le pot (ex: pot 5L = ~20cm de rayon)
         float radiusCells = std::max(1.0f, std::sqrt((float)p.volume_pot_actuel_L) * 2.0f / CELL_PX);
         
-        // On estime la hauteur de la plante (ex: 5L = 60cm de haut)
         float pHeight = 0.2f + (p.volume_pot_actuel_L * 0.08f); 
-        float pOpacity = 0.5f; // Le feuillage laisse passer 50% de la lumière !
+        float pOpacity = 0.5f; 
 
         int rC = std::ceil(radiusCells);
         
-        // On dessine un cercle sur la grille
         for(int dy = -rC; dy <= rC; dy++) {
             for(int dx = -rC; dx <= rC; dx++) {
                 if (dx*dx + dy*dy <= rC*rC) { 

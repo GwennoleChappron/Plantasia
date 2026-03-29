@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include <iostream>
 #include <vector>
 #include <nlohmann/json.hpp>
 
@@ -20,20 +19,28 @@ NLOHMANN_JSON_SERIALIZE_ENUM(NiveauDifficulte, { {NiveauDifficulte::FACILE, "FAC
 class Plante {
 public:
     std::string nom;
+    std::string nom_scientifique;  // NOUVEAU
+    std::vector<std::string> autres_noms; // NOUVEAU
+    std::string famille;           // NOUVEAU
+    std::string origine;           // NOUVEAU
+    
     TypePlante type;
     Rusticite rusticite;
+    std::string zone_climat;       // NOUVEAU (ex: Zone 8)
     ExpositionSoleil exposition_soleil;
     ExpositionVent exposition_vent;
     
     NiveauDifficulte niveau_difficulte;
     std::string volume_pot_min;
-    int besoin_eau; // <-- NOUVEAU (1 à 4)
+    std::string dimensions_adulte; // NOUVEAU
+    int besoin_eau; 
 
     int floraison_debut;
     int floraison_fin;
     int recolte_debut;
     int recolte_fin;
     
+    std::string feuillage;         // NOUVEAU
     std::string conseil_terre;
     std::string conseil_arrosage;
     std::string frequence_arrosage_ete;
@@ -43,45 +50,42 @@ public:
     std::string maladies;
     std::string compagnonnage;
     std::string toxicite_animaux;
+    std::string vertus_medicinales; // NOUVEAU
+    std::string precautions;       // NOUVEAU
     std::string astuce_pro;
     std::string notes;
+    std::string ph_sol;
+    std::string type_racinaire;
+    std::string vitesse_croissance;
+    std::string multiplication;
+    std::string tolerance_secheresse;
+    std::string sensibilite_exces_eau;
+    std::string contrainte_majeure;
+    int score_balcon;
 
     Plante() = default;
-    std::string getNom() const { return nom; }
 };
-
-inline void to_json(nlohmann::json& j, const Plante& p) {
-    j = nlohmann::json{
-        {"nom", p.nom}, {"type", p.type}, {"rusticite", p.rusticite},
-        {"exposition_soleil", p.exposition_soleil}, {"exposition_vent", p.exposition_vent},
-        {"niveau_difficulte", p.niveau_difficulte}, {"volume_pot_min", p.volume_pot_min},
-        {"besoin_eau", p.besoin_eau}, // <-- NOUVEAU
-        {"floraison_debut", p.floraison_debut}, {"floraison_fin", p.floraison_fin},
-        {"recolte_debut", p.recolte_debut}, {"recolte_fin", p.recolte_fin},
-        {"conseil_terre", p.conseil_terre}, {"conseil_arrosage", p.conseil_arrosage},
-        {"frequence_arrosage_ete", p.frequence_arrosage_ete}, {"frequence_arrosage_hiver", p.frequence_arrosage_hiver},
-        {"conseil_entretien", p.conseil_entretien}, {"rempotage", p.rempotage},
-        {"maladies", p.maladies}, {"compagnonnage", p.compagnonnage},
-        {"toxicite_animaux", p.toxicite_animaux}, {"astuce_pro", p.astuce_pro}, {"notes", p.notes}
-    };
-}
 
 inline void from_json(const nlohmann::json& j, Plante& p) {
     p.nom = j.value("nom", "Inconnu");
+    p.nom_scientifique = j.value("nom_scientifique", "");
+    p.autres_noms = j.value("autres_noms", std::vector<std::string>());
+    p.famille = j.value("famille", "");
+    p.origine = j.value("origine", "");
     p.type = j.value("type", TypePlante::AROMATIQUE);
     p.rusticite = j.value("rusticite", Rusticite::RUSTIQUE);
+    p.zone_climat = j.value("zone_climat", "");
     p.exposition_soleil = j.value("exposition_soleil", ExpositionSoleil::MI_OMBRE);
     p.exposition_vent = j.value("exposition_vent", ExpositionVent::ABRITE);
-    
     p.niveau_difficulte = j.value("niveau_difficulte", NiveauDifficulte::FACILE);
     p.volume_pot_min = j.value("volume_pot_min", "?");
-    p.besoin_eau = j.value("besoin_eau", 2); // <-- NOUVEAU (Valeur par défaut à 2)
-
+    p.dimensions_adulte = j.value("dimensions_adulte", "");
+    p.besoin_eau = j.value("besoin_eau", 2);
     p.floraison_debut = j.value("floraison_debut", 0);
     p.floraison_fin = j.value("floraison_fin", 0);
     p.recolte_debut = j.value("recolte_debut", 0);
     p.recolte_fin = j.value("recolte_fin", 0);
-
+    p.feuillage = j.value("feuillage", "");
     p.conseil_terre = j.value("conseil_terre", "");
     p.conseil_arrosage = j.value("conseil_arrosage", "");
     p.frequence_arrosage_ete = j.value("frequence_arrosage_ete", "");
@@ -91,6 +95,16 @@ inline void from_json(const nlohmann::json& j, Plante& p) {
     p.maladies = j.value("maladies", "");
     p.compagnonnage = j.value("compagnonnage", "");
     p.toxicite_animaux = j.value("toxicite_animaux", "");
+    p.vertus_medicinales = j.value("vertus_medicinales", "");
+    p.precautions = j.value("precautions", "");
     p.astuce_pro = j.value("astuce_pro", "");
     p.notes = j.value("notes", "");
+    p.ph_sol = j.value("ph_sol", "Inconnu");
+    p.type_racinaire = j.value("type_racinaire", "Inconnu");
+    p.vitesse_croissance = j.value("vitesse_croissance", "Moyenne");
+    p.multiplication = j.value("multiplication", "Semis");
+    p.tolerance_secheresse = j.value("tolerance_secheresse", "Moyenne");
+    p.sensibilite_exces_eau = j.value("sensibilite_exces_eau", "Moyenne");
+    p.contrainte_majeure = j.value("contrainte_majeure", "Aucune");
+    p.score_balcon = j.value("score_balcon", 50);
 }

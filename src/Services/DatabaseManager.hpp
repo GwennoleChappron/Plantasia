@@ -1,16 +1,23 @@
 #pragma once
+#include "./Data/Plante.hpp"
+#include "./Data/Sol.hpp" 
+#include <map>
 #include <string>
-#include <unordered_map>
-#include "Data/Plante.hpp"
 
 class DatabaseManager {
 private:
-    std::unordered_map<std::string, Plante> m_encyclopedia;
+    std::map<std::string, Plante> m_encyclopedia;
+    std::map<std::string, Sol> m_sols;
 
 public:
-    DatabaseManager() = default;
+    // Le nom correspond maintenant EXACTEMENT à ton appel dans Application.cpp
+    void chargerEncyclopedie(const std::string& fichierPlantes); 
     
-    bool chargerEncyclopedie(const std::string& filepath);
+    // Méthodes pour les plantes
+    const std::map<std::string, Plante>& getAllPlantes() const;
     const Plante* getPlante(const std::string& nom) const;
-    const std::unordered_map<std::string, Plante>& getAllPlantes() const { return m_encyclopedia; }
+
+    // Méthodes pour les sols
+    const std::map<std::string, Sol>& getAllSols() const;
+    const Sol* getSol(const std::string& type_sol) const;
 };

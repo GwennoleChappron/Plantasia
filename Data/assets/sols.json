@@ -1,0 +1,251 @@
+[
+  {
+    "type_sol": "Terreau universel",
+    "texture": "Équilibrée",
+    "drainage": "Moyen",
+    "retention_eau": "Moyenne",
+    "richesse": "Moyenne",
+    "ph_typique": "6.0 - 7.0",
+    "composition": ["Tourbe", "Compost", "Fibres végétales"],
+    "utilisation": "Plantes générales, intérieur et balcon",
+    "adapte_pour": ["Persil", "Cébette", "Menthe Poivrée", "Menthe Bergamote", "Verveine citronnée"],
+    "problemes_frequents": ["Tassement", "Appauvrissement rapide"],
+
+    "correction_ph": {
+      "baisser_ph": {
+        "objectif": "Rendre plus acide",
+        "methodes": ["Ajouter terre de bruyère", "Incorporer du soufre", "Utiliser eau de pluie"]
+      },
+      "augmenter_ph": {
+        "objectif": "Rendre plus alcalin",
+        "methodes": ["Ajouter chaux horticole", "Incorporer cendres de bois"]
+      }
+    },
+
+    "cec": "Moyenne",
+    "aeration": "Moyenne",
+    "densite": "Moyenne",
+    "capacite_tampon_ph": "Moyenne",
+    "vitesse_mineralisation": "Modérée",
+    "vie_microbienne": "Moyenne",
+    "risque_compaction": "Élevé",
+    "frequence_renouvellement": "1-2 ans",
+    "compatibilite_eau_calcaire": "Moyenne",
+    "indice_polyvalence": 90
+  },
+
+  {
+    "type_sol": "Terreau méditerranéen",
+    "texture": "Léger et caillouteux",
+    "drainage": "Excellent",
+    "retention_eau": "Faible",
+    "richesse": "Faible",
+    "ph_typique": "7.0 - 8.5",
+    "composition": ["Sable", "Pouzzolane", "Terre calcaire"],
+    "utilisation": "Plantes aromatiques sèches",
+    "adapte_pour": ["Thym", "Romarin", "Origan", "Laurier (comestible)", "Estragon"],
+    "problemes_frequents": ["Trop pauvre si culture longue"],
+
+    "correction_ph": {
+      "baisser_ph": {
+        "methodes": ["Ajouter compost", "Incorporer terreau universel"]
+      },
+      "augmenter_ph": {
+        "methodes": ["Ajouter calcaire broyé", "Utiliser eau calcaire"]
+      }
+    },
+
+    "cec": "Faible",
+    "aeration": "Excellente",
+    "densite": "Faible",
+    "capacite_tampon_ph": "Faible",
+    "vitesse_mineralisation": "Lente",
+    "vie_microbienne": "Faible",
+    "risque_compaction": "Très faible",
+    "frequence_renouvellement": "2-3 ans",
+    "compatibilite_eau_calcaire": "Excellente",
+    "indice_drainage": 95
+  },
+
+  {
+    "type_sol": "Terre de bruyère",
+    "texture": "Légère",
+    "drainage": "Bon",
+    "retention_eau": "Bonne",
+    "richesse": "Faible",
+    "ph_typique": "4.5 - 6.0",
+    "composition": ["Matières organiques acides"],
+    "utilisation": "Plantes acidophiles",
+    "adapte_pour": ["Cassis", "Groseilles", "Yuzu n°30"],
+    "problemes_frequents": ["Carences si utilisé seul"],
+
+    "correction_ph": {
+      "baisser_ph": {
+        "methodes": ["Déjà acide, éviter correction"]
+      },
+      "augmenter_ph": {
+        "methodes": ["Ajouter chaux", "Mélanger avec terreau universel"]
+      }
+    },
+
+    "cec": "Élevée",
+    "aeration": "Bonne",
+    "densite": "Faible",
+    "capacite_tampon_ph": "Élevée",
+    "vitesse_mineralisation": "Lente",
+    "vie_microbienne": "Moyenne",
+    "risque_carence": "Élevé (azote, calcium)",
+    "compatibilite_eau_calcaire": "Très faible",
+    "indice_acidite": 95
+  },
+
+  {
+    "type_sol": "Terreau horticole enrichi",
+    "texture": "Souple",
+    "drainage": "Moyen",
+    "retention_eau": "Bonne",
+    "richesse": "Élevée",
+    "ph_typique": "6.0 - 7.0",
+    "composition": ["Compost enrichi", "Engrais organique"],
+    "utilisation": "Plantes gourmandes",
+    "adapte_pour": ["Coriandre", "Persil", "Livèche", "Verveine citronnée"],
+    "problemes_frequents": ["Excès d'azote"],
+
+    "correction_ph": {
+      "baisser_ph": {
+        "methodes": ["Ajouter terre de bruyère", "Arrosage eau de pluie"]
+      },
+      "augmenter_ph": {
+        "methodes": ["Chaux horticole", "Cendres"]
+      }
+    },
+
+    "cec": "Élevée",
+    "aeration": "Moyenne",
+    "densite": "Moyenne",
+    "capacite_tampon_ph": "Élevée",
+    "vitesse_mineralisation": "Rapide",
+    "vie_microbienne": "Très élevée",
+    "risque_lessivage": "Moyen",
+    "compatibilite_engrais": "Excellente",
+    "indice_fertilite": 95
+  },
+
+  {
+    "type_sol": "Substrat agrumes",
+    "texture": "Aéré",
+    "drainage": "Très bon",
+    "retention_eau": "Moyenne",
+    "richesse": "Moyenne à élevée",
+    "ph_typique": "5.5 - 6.5",
+    "composition": ["Écorces", "Sable", "Tourbe"],
+    "utilisation": "Agrumes en pot",
+    "adapte_pour": ["Yuzu n°30"],
+    "problemes_frequents": ["Chlorose si eau calcaire"],
+
+    "correction_ph": {
+      "baisser_ph": {
+        "methodes": ["Soufre", "Eau de pluie obligatoire"]
+      },
+      "augmenter_ph": {
+        "methodes": ["Très rarement nécessaire"]
+      }
+    },
+
+    "cec": "Moyenne",
+    "aeration": "Très élevée",
+    "densite": "Faible",
+    "capacite_tampon_ph": "Moyenne",
+    "sensibilite_calcaire": "Très élevée",
+    "besoin_engrais": "Élevé",
+    "risque_chlorose": "Très élevé",
+    "indice_specialisation": 95
+  },
+
+  {
+    "type_sol": "Terreau semis",
+    "texture": "Très fine",
+    "drainage": "Bon",
+    "retention_eau": "Bonne",
+    "richesse": "Faible",
+    "ph_typique": "6.0",
+    "composition": ["Tourbe fine", "Sable"],
+    "utilisation": "Germination",
+    "adapte_pour": ["Coriandre", "Persil", "Cébette"],
+    "problemes_frequents": ["Dessèchement rapide"],
+
+    "correction_ph": {
+      "baisser_ph": {
+        "methodes": ["Peu nécessaire"]
+      },
+      "augmenter_ph": {
+        "methodes": ["Ajout léger de compost"]
+      }
+    },
+
+    "cec": "Faible",
+    "aeration": "Bonne",
+    "densite": "Très faible",
+    "capacite_tampon_ph": "Faible",
+    "sensibilite_secheresse": "Très élevée",
+    "risque_fonte_semis": "Élevé",
+    "sterilite": "Souvent élevée",
+    "indice_germination": 95
+  },
+
+  {
+    "type_sol": "Sol argileux",
+    "texture": "Lourde",
+    "drainage": "Faible",
+    "retention_eau": "Très forte",
+    "richesse": "Élevée",
+    "ph_typique": "6.5 - 8.0",
+    "composition": ["Argile"],
+    "utilisation": "Culture pleine terre",
+    "adapte_pour": [],
+    "problemes_frequents": ["Asphyxie racinaire"],
+
+    "amelioration_structure": ["Ajouter sable grossier", "Incorporer compost"],
+    "correction_ph": {
+      "baisser_ph": ["Soufre", "Matière organique"],
+      "augmenter_ph": ["Chaux"]
+    },
+
+    "cec": "Très élevée",
+    "aeration": "Très faible",
+    "densite": "Élevée",
+    "capacite_tampon_ph": "Très élevée",
+    "vitesse_rechauffement": "Lente",
+    "risque_asphyxie": "Très élevé",
+    "travail_du_sol": "Difficile",
+    "indice_fertilite": 85
+  },
+
+  {
+    "type_sol": "Sol sableux",
+    "texture": "Très léger",
+    "drainage": "Très rapide",
+    "retention_eau": "Faible",
+    "richesse": "Faible",
+    "ph_typique": "5.5 - 7.0",
+    "composition": ["Sable"],
+    "utilisation": "Plantes méditerranéennes",
+    "adapte_pour": ["Thym", "Romarin"],
+    "problemes_frequents": ["Dessèchement rapide"],
+
+    "amelioration_structure": ["Ajouter compost", "Paillage"],
+    "correction_ph": {
+      "baisser_ph": ["Matière organique"],
+      "augmenter_ph": ["Chaux"]
+    },
+
+    "cec": "Très faible",
+    "aeration": "Excellente",
+    "densite": "Très faible",
+    "capacite_tampon_ph": "Très faible",
+    "vitesse_lessivage": "Très rapide",
+    "besoin_amendement": "Très élevé",
+    "risque_secheresse": "Très élevé",
+    "indice_drainage": 100
+  }
+]

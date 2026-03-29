@@ -10,15 +10,19 @@ struct Boid {
 class BoidsSwarm {
 private:
     std::vector<Boid> m_boids;
-    sf::ConvexShape m_shape; // La forme triangulaire d'un boid
+    sf::ConvexShape m_shape;
 
-    // Paramètres de l'essaim
-    float m_maxSpeed = 100.0f;
-    float m_perceptionRadius = 300.0f;
+    float m_maxSpeed          = 100.0f;
+    float m_perceptionRadius  = 300.0f;
     float m_mouseRepulsionRadius = 200.0f;
 
 public:
     BoidsSwarm(int count, float width, float height);
     void update(float dt, sf::Vector2f mousePos, float width, float height);
     void draw(sf::RenderTarget& target);
+
+    // Contrôle dynamique depuis BackgroundEngine
+    void setMaxSpeed(float s)           { m_maxSpeed = s; }
+    void setPerceptionRadius(float r)   { m_perceptionRadius = r; }
+    float getMaxSpeed() const           { return m_maxSpeed; }
 };

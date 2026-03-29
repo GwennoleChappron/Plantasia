@@ -1,85 +1,103 @@
 #include "BoidsSwarm.hpp"
 #include <cmath>
-#include <cstdlib>
+#include <random>
+#include <unordered_map>
+#include <vector>
 
-// Petite fonction utilitaire pour la longueur d'un vecteur
-float length(const sf::Vector2f& v) { return std::sqrt(v.x*v.x + v.y*v.y); }
-sf::Vector2f normalize(const sf::Vector2f& v) { 
-    float len = length(v); 
-    return (len > 0) ? sf::Vector2f(v.x/len, v.y/len) : sf::Vector2f(0,0); 
+static std::mt19937 rng_boids(12345);
+
+static float blen(sf::Vector2f v) { return std::sqrt(v.x*v.x + v.y*v.y); }
+static sf::Vector2f bnorm(sf::Vector2f v) {
+    float l = blen(v); return l > 0 ? v/l : sf::Vector2f{};
 }
 
 BoidsSwarm::BoidsSwarm(int count, float width, float height) {
-    // On dessine un petit "cerf-volant" pour représenter le boid
     m_shape.setPointCount(3);
-    m_shape.setPoint(0, sf::Vector2f(6.0f, 0.0f));  // Nez
-    m_shape.setPoint(1, sf::Vector2f(-4.0f, 3.0f)); // Aile gauche
-    m_shape.setPoint(2, sf::Vector2f(-4.0f, -3.0f));// Aile droite
-    m_shape.setFillColor(sf::Color(100, 200, 120, 150)); // Vert d'eau transparent
+    m_shape.setPoint(0, {6.f,  0.f});
+    m_shape.setPoint(1, {-4.f, 3.f});
+    m_shape.setPoint(2, {-4.f,-3.f});
+    m_shape.setFillColor(sf::Color(100,200,120,150));
 
+    std::uniform_real_distribution<float> dx(0.f, width);
+    std::uniform_real_distribution<float> dy(0.f, height);
+    std::uniform_real_distribution<float> da(0.f, 6.28318f);
     for (int i = 0; i < count; ++i) {
         Boid b;
-        b.position = sf::Vector2f(rand() % (int)width, rand() % (int)height);
-        float angle = (rand() % 360) * 3.14159f / 180.f;
-        b.velocity = sf::Vector2f(std::cos(angle), std::sin(angle)) * m_maxSpeed;
+        b.position = {dx(rng_boids), dy(rng_boids)};
+        float a = da(rng_boids);
+        b.velocity = {std::cos(a)*m_maxSpeed, std::sin(a)*m_maxSpeed};
         m_boids.push_back(b);
     }
 }
 
 void BoidsSwarm::update(float dt, sf::Vector2f mousePos, float width, float height) {
-    for (auto& b : m_boids) {
-        sf::Vector2f separation(0, 0), alignment(0, 0), cohesion(0, 0);
+    const float CELL = m_perceptionRadius;
+    const int   GW   = (int)(width / CELL) + 1;
+
+    std::unordered_map<int, std::vector<int>> grid;
+    grid.reserve(m_boids.size());
+    for (int i = 0; i < (int)m_boids.size(); ++i) {
+        int cx = (int)(m_boids[i].position.x / CELL);
+        int cy = (int)(m_boids[i].position.y / CELL);
+        grid[cy * GW + cx].push_back(i);
+    }
+
+    for (int bi = 0; bi < (int)m_boids.size(); ++bi) {
+        auto& b = m_boids[bi];
+        int cx = (int)(b.position.x / CELL);
+        int cy = (int)(b.position.y / CELL);
+
+        sf::Vector2f sep{}, ali{}, coh{};
         int total = 0;
 
-        for (const auto& other : m_boids) {
-            if (&b == &other) continue;
-            sf::Vector2f diff = b.position - other.position;
-            float dist = length(diff);
-
-            if (dist < m_perceptionRadius) {
-                separation += diff / (dist * dist); // Plus c'est près, plus on repousse fort
-                alignment += other.velocity;
-                cohesion += other.position;
-                total++;
+        for (int ny = cy-1; ny <= cy+1; ++ny) {
+            for (int nx = cx-1; nx <= cx+1; ++nx) {
+                auto it = grid.find(ny * GW + nx);
+                if (it == grid.end()) continue;
+                for (int oi : it->second) {
+                    if (oi == bi) continue;
+                    auto& other = m_boids[oi];
+                    sf::Vector2f diff = b.position - other.position;
+                    float d = blen(diff);
+                    if (d < m_perceptionRadius && d > 0) {
+                        sep += diff / (d * d);
+                        ali += other.velocity;
+                        coh += other.position;
+                        ++total;
+                    }
+                }
             }
         }
 
         if (total > 0) {
-            alignment /= (float)total;
-            cohesion = (cohesion / (float)total) - b.position;
+            ali /= (float)total;
+            coh  = (coh / (float)total) - b.position;
         }
 
-        // Règle 4 : Fuir la souris !
-        sf::Vector2f mouseForce(0, 0);
-        sf::Vector2f mouseDiff = b.position - mousePos;
-        float mouseDist = length(mouseDiff);
-        if (mouseDist < m_mouseRepulsionRadius && mouseDist > 0) {
-            mouseForce = normalize(mouseDiff) * (300.0f / mouseDist); // Force explosive
-        }
+        sf::Vector2f mf{};
+        sf::Vector2f md = b.position - mousePos;
+        float mdist = blen(md);
+        if (mdist < m_mouseRepulsionRadius && mdist > 0)
+            mf = bnorm(md) * (300.f / mdist);
 
-        // On additionne les forces (avec des poids arbitraires pour équilibrer le vol)
-        b.velocity += (separation * 15.f + alignment * 0.1f + cohesion * 0.2f + mouseForce * 50.f) * dt;
-        
-        // Limiter la vitesse
-        float speed = length(b.velocity);
-        if (speed > m_maxSpeed) b.velocity = (b.velocity / speed) * m_maxSpeed;
-        else if (speed < m_maxSpeed * 0.5f) b.velocity = (b.velocity / speed) * (m_maxSpeed * 0.5f);
+        b.velocity += (sep*15.f + ali*0.1f + coh*0.2f + mf*50.f) * dt;
+
+        float spd = blen(b.velocity);
+        if      (spd > m_maxSpeed)       b.velocity = b.velocity/spd * m_maxSpeed;
+        else if (spd < m_maxSpeed*0.5f)  b.velocity = b.velocity/spd * (m_maxSpeed*0.5f);
 
         b.position += b.velocity * dt;
-
-        // "Wrap" de l'écran (si on sort à gauche, on réapparaît à droite)
-        if (b.position.x < 0) b.position.x += width;
+        if (b.position.x < 0)     b.position.x += width;
         if (b.position.x > width) b.position.x -= width;
-        if (b.position.y < 0) b.position.y += height;
-        if (b.position.y > height) b.position.y -= height;
+        if (b.position.y < 0)     b.position.y += height;
+        if (b.position.y > height)b.position.y -= height;
     }
 }
 
 void BoidsSwarm::draw(sf::RenderTarget& target) {
     for (const auto& b : m_boids) {
         m_shape.setPosition(b.position);
-        float angle = std::atan2(b.velocity.y, b.velocity.x) * 180.f / 3.14159265f;
-        m_shape.setRotation(angle);
+        m_shape.setRotation(std::atan2(b.velocity.y, b.velocity.x) * 180.f / 3.14159f);
         target.draw(m_shape);
     }
 }

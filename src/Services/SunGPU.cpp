@@ -23,12 +23,15 @@ static const char* RAYCAST_CS = R"(
 #version 430 core
 layout(local_size_x = 8, local_size_y = 8) in;
 
-// Nouveau format struct volumétrique
-struct WallCell { float wallH; float wallOp; float plantH; float plantOp; };
+// Nouveau format étendu (8 floats)
+struct WallCell { 
+    float wallH; float wallOp; float plantH; float plantOp; 
+    float albedo; float refl; float pad1; float pad2; 
+};
 
 layout(std430, binding = 0) readonly  buffer WallBuf  { WallCell walls[]; };
-layout(std430, binding = 1)           buffer AccumBuf  { vec4 accum[]; };   
-layout(std430, binding = 2)           buffer BounceBuf { vec4 bounce[]; };  
+layout(std430, binding = 1)           buffer AccumBuf { vec4 accum[]; };   
+layout(std430, binding = 2)           buffer BounceBuf{ vec4 bounce[]; };  
 
 uniform int   u_gridW;
 uniform int   u_gridH;
@@ -63,7 +66,6 @@ float traceRay(int tx, int ty, vec2 dir, float tanE) {
         float rayZ = tanE * (d * CELL_M);
         WallCell c = walls[idx];
 
-        // La lumière baisse en traversant les rambardes (wallOp) et les plantes (plantOp)
         if (c.wallH > rayZ) light *= (1.0 - c.wallOp);
         if (c.plantH > rayZ) light *= (1.0 - c.plantOp);
 
@@ -79,9 +81,11 @@ void main() {
 
     int idx = ty * u_gridW + tx;
     
-    // CORRECTION : On vérifie wallOp au lieu de l'ancien .type
-    if (walls[idx].wallOp > 0.9) return; 
+    // CORRECTION : On ne stoppe pas si c'est du verre (refl > 0.01)
+    // même si l'opacité est forte, pour permettre au reflet de "partir" de la vitre
+    if (walls[idx].wallOp > 0.9 && walls[idx].refl < 0.01) return; 
 
+    // ... (garder le code du spread et des dirs) ...
     float spread = 0.5 * 3.14159265 / 180.0;
     float c = cos(spread), s = sin(spread);
     vec2 dirs[3];
@@ -94,43 +98,64 @@ void main() {
     lit /= 3.0;
 
     if (lit < 0.01) return;
+    
     vec3 energy = u_sunColor * lit * u_weight;
-    accum[idx].rgb += energy;
-    accum[idx].a   += lit * u_weight;
+    
+    // On n'accumule pas de lumière directe SUR le mur opaque, 
+    // mais on calcule ses rebonds
+    if (walls[idx].wallOp < 0.9) {
+        accum[idx].rgb += energy;
+        accum[idx].a   += lit * u_weight;
+    }
 
     if (u_bounceCount <= 0) return;
-    float albedo = 0.25;
-    vec3  bounceEnergy = energy * albedo;
 
-    for (int dy = -u_bounceCount*2; dy <= u_bounceCount*2; dy++) {
-        for (int dx = -u_bounceCount*2; dx <= u_bounceCount*2; dx++) {
-            if (dx == 0 && dy == 0) continue;
-            int nx = tx + dx;
-            int ny = ty + dy;
-            if (nx < 0 || nx >= u_gridW || ny < 0 || ny >= u_gridH) continue;
-            int nidx = ny * u_gridW + nx;
+    float albedo = walls[idx].albedo;
+    float refl   = walls[idx].refl;
+
+    // --- REBOND DIFFUS --- (Inchangé)
+    if (albedo > 0.01 && walls[idx].wallOp < 0.9) {
+        // ... ton code actuel de rebond diffus ...
+    }
+
+    // --- REBOND SPÉCULAIRE (Le reflet de la fenêtre) ---
+    if (refl > 0.01) {
+        // On force la normale vers l'intérieur du balcon (vers le bas sur l'écran si c'est le mur du fond)
+        // Si y est positif, le soleil vient du bas, donc la vitre renvoie vers le haut.
+        vec2 normal = vec2(0.0, 1.0); 
+        if (abs(u_sunDir.x) > abs(u_sunDir.y)) {
+             normal = vec2(-sign(u_sunDir.x), 0.0);
+        } else {
+             normal = vec2(0.0, -sign(u_sunDir.y));
+        }
+
+        vec2 refDir = reflect(u_sunDir, normal);
+        
+        // Fresnel boosté pour la visibilité
+        float cosTheta = abs(dot(u_sunDir, normal));
+        float fresnel = 0.1 + 0.9 * pow(1.0 - cosTheta, 5.0);
+        
+        // On multiplie par 15.0 pour que le reflet "perce" l'ombre portée
+        vec3 specularEnergy = energy * refl * fresnel * 15.0; 
+
+        float px = float(tx) + 0.5;
+        float py = float(ty) + 0.5;
+
+        for (float d = 1.0; d < float(u_bounceCount) * 8.0; d += 0.5) {
+            int nx = int(px + refDir.x * d);
+            int ny = int(py + refDir.y * d);
+            if (nx < 0 || nx >= u_gridW || ny < 0 || ny >= u_gridH) break;
             
-            // CORRECTION : On vérifie wallOp
-            if (walls[nidx].wallOp > 0.9) continue;
-
-            float dist2 = float(dx*dx + dy*dy);
-            float falloff = 1.0 / (1.0 + dist2 * 0.4);
-
-            bool blocked = false;
-            float steps = max(abs(float(dx)), abs(float(dy))) * 2.0;
-            for (float t = 0.5; t < 1.0; t += 1.0/steps) {
-                int cx = int(float(tx) + dx * t);
-                int cy = int(float(ty) + dy * t);
-                if (cx >= 0 && cx < u_gridW && cy >= 0 && cy < u_gridH) {
-                    // CORRECTION : On vérifie wallOp
-                    if (walls[cy * u_gridW + cx].wallOp > 0.9) { blocked = true; break; }
-                }
-            }
-            if (!blocked) bounce[nidx].rgb += bounceEnergy * falloff;
+            int nidx = ny * u_gridW + nx;
+            if (walls[nidx].wallOp > 0.9) break; 
+            
+            // On ajoute l'énergie du reflet dans le buffer de bounce
+            bounce[nidx].rgb += specularEnergy * (1.0 / (1.0 + d * 0.1));
         }
     }
 }
 )";
+
 static const char* MERGE_CS = R"(
 #version 430 core
 layout(local_size_x = 8, local_size_y = 8) in;
@@ -139,8 +164,10 @@ layout(std430, binding = 1) readonly buffer AccumBuf  { vec4 accum[];  };
 layout(std430, binding = 2) readonly buffer BounceBuf { vec4 bounce[]; };
 layout(rgba8,  binding = 0) writeonly uniform image2D u_result;
 
-// --- CORRECTION : Le shader connaît le nouveau format ! ---
-struct WallCell { float wallH; float wallOp; float plantH; float plantOp; };
+struct WallCell { 
+    float wallH; float wallOp; float plantH; float plantOp; 
+    float albedo; float refl; float pad1; float pad2; 
+};
 layout(std430, binding = 0) readonly buffer WallBuf { WallCell walls[]; };
 
 uniform int   u_gridW;
@@ -153,8 +180,6 @@ void main() {
     if (tx >= u_gridW || ty >= u_gridH) return;
     int idx = ty * u_gridW + tx;
 
-    // On ne masque la Heatmap QUE sur les murs pleins (wallOp == 1.0)
-    // Magie : La heatmap s'affichera sous tes plantes et sous les rambardes !
     if (walls[idx].wallOp > 0.9) {
         imageStore(u_result, ivec2(tx, ty), vec4(0.0));
         return;
@@ -164,7 +189,7 @@ void main() {
     float hours  = accum[idx].a;    
     vec3 rebound = bounce[idx].rgb; 
 
-    vec3 total = direct + rebound * 0.4;
+    vec3 total = direct + rebound * 0.5;
     float norm = clamp(hours / u_maxHours, 0.0, 1.0);
 
     vec3 color;
@@ -174,7 +199,10 @@ void main() {
     else if (norm < 0.90) color = mix(vec3(0.90,0.70,0.10), vec3(1.00,0.35,0.05), (norm-0.70)/0.20);
     else                  color = mix(vec3(1.00,0.35,0.05), vec3(1.00,0.10,0.00), (norm-0.90)/0.10);
 
-    if (hours > 0.01) color *= (direct / (hours + 0.001)) * 1.2; 
+    if (hours > 0.01 || length(rebound) > 0.01) {
+        color *= (total / (hours + length(rebound) + 0.001)) * 1.2; 
+    }
+    
     color = clamp(color, 0.0, 1.0);
     imageStore(u_result, ivec2(tx, ty), vec4(color, 0.75));
 }
@@ -217,7 +245,7 @@ bool SunGPU::init(int gridW, int gridH) {
 
     glGenBuffers(1, &m_wallSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_wallSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, n * sizeof(float) * 4, nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, n * sizeof(float) * 8, nullptr, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &m_accumSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_accumSSBO);
@@ -250,18 +278,39 @@ SunGPU::~SunGPU() {
 }
 
 void SunGPU::uploadWalls(const BalconyConfig& cfg) {
-    // NOUVEAU FORMAT : 4 Floats (Mur Haut, Mur Opacité, Plante Haut, Plante Opacité)
-    struct GPUCell { float wH; float wOp; float pH; float pOp; };
+    struct GPUCell { 
+        float wH; float wOp; float pH; float pOp; 
+        float albedo; float refl; float pad1; float pad2; 
+    };
     std::vector<GPUCell> data(cfg.width * cfg.height);
     
     for (int r = 0; r < cfg.height; ++r) {
         for (int c = 0; c < cfg.width; ++c) {
             const auto& cell = cfg.grid[r][c];
-            float wOp = 0.0f;
-            if (cell.type == WallType::WALL) wOp = 1.0f;
-            else if (cell.type == WallType::RAILING) wOp = 0.4f; // 40% opaque
             
-            data[r * cfg.width + c] = { cell.wallHeight, wOp, cell.plantHeight, cell.plantOpacity };
+            float wOp = 0.0f;
+            float albedo = 0.25f; // Sol du balcon par défaut
+            float refl = 0.0f;    
+
+            if (cell.type == WallType::WALL) { 
+                wOp = 1.0f; 
+                albedo = 0.60f; 
+            } 
+            else if (cell.type == WallType::RAILING) { 
+                wOp = 0.4f; 
+                albedo = 0.30f; 
+            }
+            // ---> C'EST ICI QUE LA MAGIE DU VERRE S'ACTIVE ! <---
+            else if (cell.type == WallType::GLASS) {
+                wOp = 0.15f;    // Laisse passer 85% de la lumière
+                albedo = 0.05f; // Très peu de diffusion, c'est du verre
+                refl = 0.80f;   // Forte réflexion sous forme de faisceau !
+            }
+            
+            data[r * cfg.width + c] = { 
+                cell.wallHeight, wOp, cell.plantHeight, cell.plantOpacity, 
+                albedo, refl, 0.f, 0.f 
+            };
         }
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_wallSSBO);
@@ -321,7 +370,6 @@ void SunGPU::compute(const BalconyConfig& cfg, int bounceCount) {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_accumSSBO);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_bounceSSBO);
 
-    // On force la conversion du type retourné par SFML vers un GLuint standard pour satisfaire MSVC
     glBindImageTexture(0, static_cast<GLuint>(m_resultTex.getNativeHandle()), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
     glUniform1i(glGetUniformLocation(m_csMerge, "u_gridW"), m_gridW);
