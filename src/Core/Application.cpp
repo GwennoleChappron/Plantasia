@@ -8,8 +8,7 @@ Application::Application() {
     m_window.setFramerateLimit(60);
     (void)ImGui::SFML::Init(m_window);
     initStyleImGui();
-    m_database.chargerEncyclopedie("encyclopedia.json");
-    m_database.chargerEncyclopedie("sols.json");
+    m_database.chargerTout();
     m_userBalcony.chargerProfil("mon_balcon.json");
     m_background = std::make_unique<BackgroundEngine>(1100.0f, 720.0f);
     m_stateMachine.addState(std::make_unique<StateMainMenu>(this));

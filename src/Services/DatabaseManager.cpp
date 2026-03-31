@@ -1,65 +1,112 @@
 #include "DatabaseManager.hpp"
-#include <fstream>
-#include <iostream>
-#include <nlohmann/json.hpp>
+#include "DataLoader.hpp"
+#include <algorithm>
+#include <cctype>
 
-void DatabaseManager::chargerEncyclopedie(const std::string& fichierPlantes) {
-    // On s'assure de chercher dans le dossier assets/
-    std::string cheminPlantes = "assets/" + fichierPlantes;
+// ─────────────────────────────────────────────────────────────────────────────
+//  chargerTout
+// ─────────────────────────────────────────────────────────────────────────────
 
-    // 1. --- CHARGEMENT DES PLANTES ---
-    std::ifstream filePlantes(cheminPlantes);
-    if (filePlantes.is_open()) {
-        try {
-            nlohmann::json j;
-            filePlantes >> j;
-            for (auto& item : j) {
-                Plante p = item.get<Plante>();
-                m_encyclopedia[p.nom] = p;
-            }
-            std::cout << "Succes : " << m_encyclopedia.size() << " plantes chargees (" << cheminPlantes << ")." << std::endl;
-        } catch (const std::exception& e) {
-            std::cerr << "ERREUR lecture " << cheminPlantes << " : " << e.what() << std::endl;
-        }
-    } else {
-        std::cerr << "ERREUR CRITIQUE : Fichier " << cheminPlantes << " introuvable !" << std::endl;
+bool DatabaseManager::chargerTout(
+    const std::string& cheminPlantes,
+    const std::string& cheminSols,
+    const std::string& cheminPots,
+    const std::string& cheminBoutures)
+{
+    bool ok = true;
+    ok &= DataLoader::chargerPlantes (cheminPlantes,  m_plantes);
+    ok &= DataLoader::chargerSols    (cheminSols,     m_sols);
+    ok &= DataLoader::chargerPots    (cheminPots,     m_pots);
+    ok &= DataLoader::chargerBoutures(cheminBoutures, m_boutures);
+
+    if (ok) {
+        construireCache();
+        m_charge = true;
     }
-
-    // 2. --- CHARGEMENT DES SOLS ---
-    std::ifstream fileSols("assets/sols.json");
-    if (fileSols.is_open()) {
-        try {
-            nlohmann::json j;
-            fileSols >> j;
-            for (auto& item : j) {
-                Sol s = item.get<Sol>();
-                m_sols[s.type_sol] = s;
-            }
-            std::cout << "Succes : " << m_sols.size() << " sols charges (assets/sols.json)." << std::endl;
-        } catch (const std::exception& e) {
-            std::cerr << "ERREUR lecture sols.json : " << e.what() << std::endl;
-        }
-    } else {
-        std::cerr << "ERREUR CRITIQUE : Fichier assets/sols.json introuvable !" << std::endl;
-    }
+    return ok;
 }
 
-const std::map<std::string, Plante>& DatabaseManager::getAllPlantes() const { 
-    return m_encyclopedia; 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Cache — calculé une seule fois
+// ─────────────────────────────────────────────────────────────────────────────
+
+void DatabaseManager::construireCache() {
+    // Pointeurs vers les plantes du vecteur principal
+    m_plantesTrieesParNom.clear();
+    m_plantesTrieesParScore.clear();
+    m_plantesTrieesParNom.reserve(m_plantes.size());
+    m_plantesTrieesParScore.reserve(m_plantes.size());
+
+    for (const auto& p : m_plantes) {
+        m_plantesTrieesParNom.push_back(&p);
+        m_plantesTrieesParScore.push_back(&p);
+    }
+
+    std::sort(m_plantesTrieesParNom.begin(), m_plantesTrieesParNom.end(),
+        [](const Plant* a, const Plant* b) {
+            return a->nom < b->nom;
+        });
+
+    std::sort(m_plantesTrieesParScore.begin(), m_plantesTrieesParScore.end(),
+        [](const Plant* a, const Plant* b) {
+            return a->scoreBalcon > b->scoreBalcon;
+        });
 }
 
-const Plante* DatabaseManager::getPlante(const std::string& nom) const {
-    auto it = m_encyclopedia.find(nom);
-    if (it != m_encyclopedia.end()) return &(it->second);
+// ─────────────────────────────────────────────────────────────────────────────
+//  Recherches par clé — O(n) acceptable sur 16-100 plantes
+// ─────────────────────────────────────────────────────────────────────────────
+
+const Plant* DatabaseManager::findPlante(const std::string& nom) const {
+    for (const auto& p : m_plantes)
+        if (p.nom == nom) return &p;
     return nullptr;
 }
 
-const std::map<std::string, Sol>& DatabaseManager::getAllSols() const { 
-    return m_sols; 
+const Soil* DatabaseManager::findSol(const std::string& typeSol) const {
+    for (const auto& s : m_sols)
+        if (s.typeSol == typeSol) return &s;
+    return nullptr;
 }
 
-const Sol* DatabaseManager::getSol(const std::string& type_sol) const {
-    auto it = m_sols.find(type_sol);
-    if (it != m_sols.end()) return &(it->second);
+const Pot* DatabaseManager::findPot(const std::string& typeRacin) const {
+    for (const auto& p : m_pots)
+        if (p.typeRacinaire == typeRacin) return &p;
     return nullptr;
+}
+
+const Bouture* DatabaseManager::findBouture(const std::string& nom) const {
+    for (const auto& b : m_boutures)
+        if (b.nom == nom) return &b;
+    return nullptr;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Filtres
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Comparaison insensible à la casse (ASCII simple — suffisant pour noms latins)
+static bool contientInsensible(const std::string& texte, const std::string& recherche) {
+    if (recherche.empty()) return true;
+    std::string t = texte, r = recherche;
+    std::transform(t.begin(), t.end(), t.begin(), ::tolower);
+    std::transform(r.begin(), r.end(), r.begin(), ::tolower);
+    return t.find(r) != std::string::npos;
+}
+
+std::vector<const Plant*> DatabaseManager::filtrerParNom(const std::string& recherche) const {
+    std::vector<const Plant*> result;
+    for (const auto* p : m_plantesTrieesParNom)
+        if (contientInsensible(p->nom, recherche) ||
+            contientInsensible(p->nomScientifique, recherche))
+            result.push_back(p);
+    return result;
+}
+
+std::vector<const Plant*> DatabaseManager::filtrerParSol(const std::string& typeSol) const {
+    std::vector<const Plant*> result;
+    for (const auto& p : m_plantes)
+        if (p.solRecommande == typeSol || p.solAlternatif == typeSol)
+            result.push_back(&p);
+    return result;
 }

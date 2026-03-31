@@ -253,42 +253,12 @@ void StateBalconySim::draw(sf::RenderWindow& window) {
 
     // 3. On remet la caméra par défaut pour l'UI ImGui
     window.setView(window.getDefaultView());
-}
-
-void StateBalconySim::renderShadowLayer(sf::RenderWindow& window) {
-    if (!m_sun.isAboveHorizon()) return;
-
-    // 1. Tableau de pixels (1 pixel = 1 case)
-    std::vector<sf::Uint8> pixels(m_cfg.width * m_cfg.height * 4, 0);
-
-    for (int r = 0; r < m_cfg.height; ++r) {
-        for (int c = 0; c < m_cfg.width; ++c) {
-            int idx = (r * m_cfg.width + c) * 4;
-            
-            float soft = SunCalculator::softShadow(m_cfg, c, r, m_sun);
-            
-            // Intensité de l'ombre (max 170/255 pour qu'elle reste translucide)
-            sf::Uint8 alpha = (sf::Uint8)((1.0f - soft) * 170.f); 
-
-            // Teinte bleutée réaliste de l'ombre
-            pixels[idx + 0] = 15;    // Rouge
-            pixels[idx + 1] = 20;    // Vert
-            pixels[idx + 2] = 40;    // Bleu
-            pixels[idx + 3] = alpha; // Transparence
-            
-            // Optionnel : un peu moins d'ombre sur les murs/plantes
-            if (m_cfg.grid[r][c].isObstacle()) {
-                pixels[idx + 3] = alpha / 2;
-            }
-        }
-    }
 
     static sf::Texture shadowTex;
     if (shadowTex.getSize().x != m_cfg.width || shadowTex.getSize().y != m_cfg.height) {
         shadowTex.create(m_cfg.width, m_cfg.height);
         shadowTex.setSmooth(true); // Flou doux sur les bords
     }
-    shadowTex.update(pixels.data());
 
     sf::Sprite shadowSpr(shadowTex);
     shadowSpr.setScale(CELL_PX, CELL_PX);
@@ -304,16 +274,22 @@ void StateBalconySim::renderGrid(sf::RenderWindow& window) {
 void StateBalconySim::renderShadowLayer(sf::RenderWindow& window) {
     if (!m_sun.isAboveHorizon()) return;
 
+    // Le fameux rectangle brut, calé sur ta grille
     sf::RectangleShape rect(sf::Vector2f(CELL_PX, CELL_PX));
 
     for (int r = 0; r < m_cfg.height; ++r) {
         for (int c = 0; c < m_cfg.width; ++c) {
             const auto& cell = m_cfg.grid[r][c];
+            
+            // On ne dessine pas d'ombre par-dessus les murs ou les vitres
             if (cell.isObstacle()) continue;
 
+            // softShadow te renvoie une valeur fine (ex: vitre semi-transparente)
             float soft = SunCalculator::softShadow(m_cfg, c, r, m_sun);
+            
+            // On convertit ça en opacité (0 = invisible, 180 = ombre bien noire)
             sf::Uint8 alpha = (sf::Uint8)((1.0f - soft) * 180.f);
-            if (alpha < 5) continue;
+            if (alpha < 5) continue; // Optimisation : on ne dessine pas ce qu'on ne voit pas
 
             rect.setFillColor(sf::Color(0, 0, 0, alpha));
             rect.setPosition(c * CELL_PX, r * CELL_PX);
@@ -542,6 +518,45 @@ void StateBalconySim::bakePlantsIntoGrid() {
                     }
                 }
             }
+        }
+    }
+}
+void StateBalconySim::renderPlants(sf::RenderWindow& window) {
+    sf::CircleShape plantShape;
+    const auto& plantes = m_app->getUserBalcony().getMesPlantes();
+    
+    for (int i = 0; i < (int)plantes.size(); ++i) {
+        const auto& p = plantes[i];
+        
+        // On ne dessine que si la plante a une position valide sur le balcon
+        if (p.position_balcon.x >= 0.0f) {
+            // Le rayon dépend du volume du pot
+            float radius = std::max(CELL_PX * 0.4f, std::sqrt((float)p.volume_pot_actuel_L) * 2.0f);
+            plantShape.setRadius(radius);
+            plantShape.setOrigin(radius, radius); 
+            
+            // La position est directement en coordonnées "Monde" grâce à la sf::View
+            plantShape.setPosition(p.position_balcon);
+            
+            // Couleurs de survol et de sélection
+            if (m_editMode == EditMode::PLANTE && m_selectedPlantIdx == i) {
+                // Plante sélectionnée (glissée/déposée)
+                plantShape.setFillColor(sf::Color(100, 255, 120, 220));
+                plantShape.setOutlineThickness(3.f);
+                plantShape.setOutlineColor(sf::Color::White);
+            } else if (m_editMode == EditMode::PLANTE && m_hoveredPlantIdx == i) {
+                // Plante survolée par la souris
+                plantShape.setFillColor(sf::Color(80, 200, 100, 220));
+                plantShape.setOutlineThickness(2.f);
+                plantShape.setOutlineColor(sf::Color(200, 255, 200));
+            } else {
+                // Plante normale
+                plantShape.setFillColor(sf::Color(40, 130, 60, 220));
+                plantShape.setOutlineThickness(1.f);
+                plantShape.setOutlineColor(sf::Color(20, 80, 30));
+            }
+            
+            window.draw(plantShape);
         }
     }
 }

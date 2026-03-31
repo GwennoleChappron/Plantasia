@@ -1,6 +1,7 @@
 #include "StateCatalogue.hpp"
 #include <algorithm>
 #include <cmath>
+
 namespace {
     const std::string catalogueOutlineShaderCode = R"(
     uniform sampler2D texture;
@@ -59,12 +60,11 @@ namespace {
         }
         return ImVec4(0.55f, 0.68f, 0.55f, 1.00f);
     }
+
     void DrawJaugeCirculaire(const char* label, float valeur, float valeur_max, ImVec2 centre, float rayon, ImU32 couleurJauge, ImU32 couleurFond) {
         ImDrawList* dl = ImGui::GetWindowDrawList();
         float epaisseur = 6.0f;
-
         dl->AddCircle(centre, rayon, couleurFond, 32, epaisseur);
-
         float fraction = std::clamp(valeur / valeur_max, 0.0f, 1.0f);
         if (fraction > 0.01f) {
             float angle_min = -PI / 2.0f; 
@@ -73,15 +73,14 @@ namespace {
             dl->PathArcTo(centre, rayon, angle_min, angle_max, 32);
             dl->PathStroke(couleurJauge, 0, epaisseur);
         }
-
         char buf[16];
         snprintf(buf, sizeof(buf), "%.0f", valeur);
         ImVec2 tSize = ImGui::CalcTextSize(buf);
         dl->AddText(ImVec2(centre.x - tSize.x * 0.5f, centre.y - tSize.y * 0.5f), IM_COL32(255, 255, 255, 255), buf);
-
         ImVec2 lSize = ImGui::CalcTextSize(label);
         dl->AddText(ImVec2(centre.x - lSize.x * 0.5f, centre.y + rayon + 8.0f), IM_COL32(180, 200, 180, 255), label);
     }
+
     const char* SoleilLabel(ExpositionSoleil e) {
         switch(e) {
             case ExpositionSoleil::PLEIN_SOLEIL: return "Plein Soleil";
@@ -102,22 +101,22 @@ namespace {
     }
 }
 
+// ---------------------------------------------------------
+// LE CONSTRUCTEUR MANQUANT ÉTAIT ICI :
+// ---------------------------------------------------------
 StateCatalogue::StateCatalogue(Application* app) : State(app) {}
-// Remplace onEnter() par :
+
 void StateCatalogue::onEnter() {
     if (sf::Shader::isAvailable())
         m_outlineShader.loadFromMemory(catalogueOutlineShaderCode, sf::Shader::Fragment);
     chargerTextures();
 }
 
-// Ajoute cette méthode (après onEnter) :
 void StateCatalogue::chargerTextures() {
     for (const auto& p : m_app->getUserBalcony().getMesPlantes()) {
-        // PNG principal (galerie drag&drop)
         if (m_plantTextures.find(p.nom_espece) == m_plantTextures.end()) {
             sf::Texture tex;
             if (!tex.loadFromFile("assets/" + p.nom_espece + ".png")) {
-                // Fallback : carré vert 64x64
                 sf::Image img;
                 img.create(64, 64, sf::Color(40, 100, 50, 200));
                 tex.loadFromImage(img);
@@ -126,21 +125,22 @@ void StateCatalogue::chargerTextures() {
             m_plantTextures[p.nom_espece] = std::move(tex);
         }
 
-        // PNG icône (fiche détail)
         if (m_plantIconTextures.find(p.nom_espece) == m_plantIconTextures.end()) {
             sf::Texture icon;
-            // Cherche d'abord nom_espece_icon.png, sinon reuse le principal
             if (!icon.loadFromFile("assets/" + p.nom_espece + "_icon.png"))
-                icon = m_plantTextures[p.nom_espece]; // fallback = même PNG
+                icon = m_plantTextures[p.nom_espece]; 
             icon.setSmooth(true);
             m_plantIconTextures[p.nom_espece] = std::move(icon);
         }
     }
 }
+
 void StateCatalogue::onExit() {}
+
 void StateCatalogue::update(float dt) {
     m_time += dt;
 }
+
 void StateCatalogue::draw(sf::RenderWindow& window) {}
 
 void StateCatalogue::DessinerCalendrierVisuel(const char* label, int debut, int fin, ImVec4 col) {
@@ -257,7 +257,6 @@ void StateCatalogue::drawImGui() {
             UserPlant& editablePlant = const_cast<UserPlant&>(mesPlantes[m_indexSelectionne]);
             ImDrawList* dl = ImGui::GetWindowDrawList();
             
-            // VARIABLES CORRIGÉES ICI !
             ImVec2 panelPos  = ImGui::GetCursorScreenPos(); 
             float  panelW    = largeurDetail - 24.f;
 
@@ -412,7 +411,7 @@ void StateCatalogue::drawImGui() {
                     
                     SectionInfo("Zone Climat", refP->zone_climat.c_str(), CouleurRusticite(refP->rusticite));
                     SectionInfo("Volume du pot min.", refP->volume_pot_min.c_str(), ImVec4(0.8f, 0.8f, 0.8f, 1.f));
-                    SectionInfo("Substrat recommande", refP->conseil_terre.c_str(), ImVec4(0.8f, 0.6f, 0.3f, 1.f));
+                    SectionInfo("Substrat recommande", refP->sol_recommande.c_str(), ImVec4(0.8f, 0.6f, 0.3f, 1.f));
                     
                     ImGui::Separator(); ImGui::Dummy({0,4});
                     
@@ -430,7 +429,7 @@ void StateCatalogue::drawImGui() {
                 if (ImGui::BeginTabItem("Entretien & Sante")) {
                     ImGui::Spacing();
                     SectionInfo("Taille & Soins", refP->conseil_entretien.c_str(), ImVec4(0.5f, 0.8f, 0.5f, 1.f));
-                    SectionInfo("Rempotage", refP->rempotage.c_str(), ImVec4(0.6f, 0.5f, 0.8f, 1.f));
+                    SectionInfo("Type racinaire (Pot)", refP->type_racinaire_pot.c_str(), ImVec4(0.6f, 0.5f, 0.8f, 1.f));
                     SectionInfo("Compagnonnage", refP->compagnonnage.c_str(), ImVec4(0.4f, 0.9f, 0.6f, 1.f));
                     
                     if (!refP->maladies.empty()) {

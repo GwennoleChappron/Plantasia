@@ -48,11 +48,14 @@ struct BalconyConfig {
     void syncRealDate() {
         std::time_t t = std::time(nullptr);
         std::tm tmBuf{};
-        localtime_s(&tmBuf, &t);
-        std::tm* tm = &tmBuf;
-        year  = tm->tm_year + 1900;
-        month = tm->tm_mon  + 1;
-        day   = tm->tm_mday;
+        #if defined(_WIN32)
+            localtime_s(&tmBuf, &t);
+        #else
+            localtime_r(&t, &tmBuf);
+        #endif
+        year  = tmBuf.tm_year + 1900;
+        month = tmBuf.tm_mon  + 1;
+        day   = tmBuf.tm_mday;
     }
 
     void resize(int w, int h) {
