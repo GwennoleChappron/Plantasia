@@ -1,0 +1,290 @@
+[
+  {
+    "type_sol": "TERREAU_UNIVERSEL",
+    "texture": "EQUILIBREE",
+    "drainage": "MOYEN",
+    "retention_eau": "MOYENNE",
+    "richesse": "MOYENNE",
+    "ph": {"min": 6.0, "max": 7.0},
+
+    "composition": ["TOURBE", "COMPOST", "FIBRES_VEGETALES"],
+
+    "utilisation": "GENERAL",
+    "adapte_pour": ["PERSIL", "CEBETTE", "MENTHE_POIVREE", "MENTHE_BERGAMOTE", "VERVEINE"],
+
+    "problemes": ["TASSEMENT", "APPAUVRISSEMENT"],
+
+    "correction_ph": {
+      "BAISSER": ["TERRE_BRUYERE", "SOUFRE", "EAU_PLUIE"],
+      "AUGMENTER": ["CHAUX", "CENDRES"]
+    },
+
+    "cec": "MOYENNE",
+    "aeration": "MOYENNE",
+    "densite": "MOYENNE",
+    "tampon_ph": "MOYEN",
+    "mineralisation": "MODEREE",
+    "vie_microbienne": "MOYENNE",
+
+    "risques": ["COMPACTION"],
+
+    "frequence_renouvellement": "TOUS_1_2_ANS",
+    "compatibilite_calcaire": "MOYENNE",
+
+    "indices": {
+      "polyvalence": 90
+    }
+  },
+
+  {
+    "type_sol": "TERREAU_MEDITERRANEEN",
+    "texture": "LEGER_CAILLOUTEUX",
+    "drainage": "EXCELLENT",
+    "retention_eau": "FAIBLE",
+    "richesse": "FAIBLE",
+    "ph": {"min": 7.0, "max": 8.5},
+
+    "composition": ["SABLE", "POUZZOLANE", "CALCAIRE"],
+
+    "utilisation": "AROMATIQUES_SECHES",
+    "adapte_pour": ["THYM", "ROMARIN", "ORIGAN", "LAURIER", "ESTRAGON"],
+
+    "problemes": ["PAUVRETE_LONG_TERME"],
+
+    "correction_ph": {
+      "BAISSER": ["COMPOST", "TERREAU_UNIVERSEL"],
+      "AUGMENTER": ["CALCAIRE", "EAU_CALCAIRE"]
+    },
+
+    "cec": "FAIBLE",
+    "aeration": "EXCELLENTE",
+    "densite": "FAIBLE",
+    "tampon_ph": "FAIBLE",
+    "mineralisation": "LENTE",
+    "vie_microbienne": "FAIBLE",
+
+    "risques": ["CARENCES"],
+
+    "frequence_renouvellement": "TOUS_2_3_ANS",
+    "compatibilite_calcaire": "EXCELLENTE",
+
+    "indices": {
+      "drainage": 95
+    }
+  },
+
+  {
+    "type_sol": "TERRE_BRUYERE",
+    "texture": "LEGERE",
+    "drainage": "BON",
+    "retention_eau": "BONNE",
+    "richesse": "FAIBLE",
+    "ph": {"min": 4.5, "max": 6.0},
+
+    "composition": ["MATIERE_ORGANIQUE_ACIDE"],
+
+    "utilisation": "ACIDOPHILES",
+    "adapte_pour": ["CASSIS", "GROSEILLE", "YUZU"],
+
+    "problemes": ["CARENCES"],
+
+    "correction_ph": {
+      "BAISSER": [],
+      "AUGMENTER": ["CHAUX", "TERREAU_UNIVERSEL"]
+    },
+
+    "cec": "ELEVEE",
+    "aeration": "BONNE",
+    "densite": "FAIBLE",
+    "tampon_ph": "ELEVEE",
+    "mineralisation": "LENTE",
+    "vie_microbienne": "MOYENNE",
+
+    "risques": ["CARENCES_AZOTE", "CARENCES_CALCIUM"],
+
+    "compatibilite_calcaire": "TRES_FAIBLE",
+
+    "indices": {
+      "acidite": 95
+    }
+  },
+
+  {
+    "type_sol": "TERREAU_HORTICOLE_ENRICHI",
+    "texture": "SOUPLE",
+    "drainage": "MOYEN",
+    "retention_eau": "BONNE",
+    "richesse": "ELEVEE",
+    "ph": {"min": 6.0, "max": 7.0},
+
+    "composition": ["COMPOST_ENRICHI", "ENGRAIS_ORGANIQUE"],
+
+    "utilisation": "PLANTES_GOURMANDES",
+    "adapte_pour": ["CORIANDRE", "PERSIL", "LIVECHE", "VERVEINE"],
+
+    "problemes": ["EXCES_AZOTE"],
+
+    "correction_ph": {
+      "BAISSER": ["TERRE_BRUYERE", "EAU_PLUIE"],
+      "AUGMENTER": ["CHAUX", "CENDRES"]
+    },
+
+    "cec": "ELEVEE",
+    "aeration": "MOYENNE",
+    "densite": "MOYENNE",
+    "tampon_ph": "ELEVEE",
+    "mineralisation": "RAPIDE",
+    "vie_microbienne": "TRES_ELEVEE",
+
+    "risques": ["LESSIVAGE"],
+
+    "compatibilite_engrais": "EXCELLENTE",
+
+    "indices": {
+      "fertilite": 95
+    }
+  },
+
+  {
+    "type_sol": "SUBSTRAT_AGRUMES",
+    "texture": "AERE",
+    "drainage": "TRES_BON",
+    "retention_eau": "MOYENNE",
+    "richesse": "MOYENNE_ELEVEE",
+    "ph": {"min": 5.5, "max": 6.5},
+
+    "composition": ["ECORCES", "SABLE", "TOURBE"],
+
+    "utilisation": "AGRUMES",
+    "adapte_pour": ["YUZU"],
+
+    "problemes": ["CHLOROSE"],
+
+    "correction_ph": {
+      "BAISSER": ["SOUFRE", "EAU_PLUIE"],
+      "AUGMENTER": []
+    },
+
+    "cec": "MOYENNE",
+    "aeration": "TRES_ELEVEE",
+    "densite": "FAIBLE",
+    "tampon_ph": "MOYEN",
+
+    "sensibilite_calcaire": "TRES_ELEVEE",
+    "besoin_engrais": "ELEVEE",
+
+    "risques": ["CHLOROSE"],
+
+    "indices": {
+      "specialisation": 95
+    }
+  },
+
+  {
+    "type_sol": "TERREAU_SEMIS",
+    "texture": "TRES_FINE",
+    "drainage": "BON",
+    "retention_eau": "BONNE",
+    "richesse": "FAIBLE",
+    "ph": {"min": 6.0, "max": 6.5},
+
+    "composition": ["TOURBE_FINE", "SABLE"],
+
+    "utilisation": "SEMIS",
+    "adapte_pour": ["CORIANDRE", "PERSIL", "CEBETTE"],
+
+    "problemes": ["DESSECHEMENT"],
+
+    "correction_ph": {
+      "BAISSER": [],
+      "AUGMENTER": ["COMPOST"]
+    },
+
+    "cec": "FAIBLE",
+    "aeration": "BONNE",
+    "densite": "TRES_FAIBLE",
+    "tampon_ph": "FAIBLE",
+
+    "sensibilite_secheresse": "TRES_ELEVEE",
+
+    "risques": ["FONTE_SEMIS"],
+
+    "sterilite": "ELEVEE",
+
+    "indices": {
+      "germination": 95
+    }
+  },
+
+  {
+    "type_sol": "SOL_ARGILEUX",
+    "texture": "LOURDE",
+    "drainage": "FAIBLE",
+    "retention_eau": "TRES_FORTE",
+    "richesse": "ELEVEE",
+    "ph": {"min": 6.5, "max": 8.0},
+
+    "composition": ["ARGILE"],
+
+    "utilisation": "PLEINE_TERRE",
+
+    "problemes": ["ASPHYXIE"],
+
+    "amelioration": ["SABLE_GROSSIER", "COMPOST"],
+
+    "correction_ph": {
+      "BAISSER": ["SOUFRE", "MATIERE_ORGANIQUE"],
+      "AUGMENTER": ["CHAUX"]
+    },
+
+    "cec": "TRES_ELEVEE",
+    "aeration": "TRES_FAIBLE",
+    "densite": "ELEVEE",
+    "tampon_ph": "TRES_ELEVEE",
+
+    "risques": ["ASPHYXIE_RACINAIRE"],
+
+    "travail_sol": "DIFFICILE",
+
+    "indices": {
+      "fertilite": 85
+    }
+  },
+
+  {
+    "type_sol": "SOL_SABLEUX",
+    "texture": "TRES_LEGER",
+    "drainage": "TRES_RAPIDE",
+    "retention_eau": "FAIBLE",
+    "richesse": "FAIBLE",
+    "ph": {"min": 5.5, "max": 7.0},
+
+    "composition": ["SABLE"],
+
+    "utilisation": "MEDITERRANEEN",
+
+    "adapte_pour": ["THYM", "ROMARIN"],
+
+    "problemes": ["SECHERESSE"],
+
+    "amelioration": ["COMPOST", "PAILLAGE"],
+
+    "correction_ph": {
+      "BAISSER": ["MATIERE_ORGANIQUE"],
+      "AUGMENTER": ["CHAUX"]
+    },
+
+    "cec": "TRES_FAIBLE",
+    "aeration": "EXCELLENTE",
+    "densite": "TRES_FAIBLE",
+    "tampon_ph": "TRES_FAIBLE",
+
+    "risques": ["SECHERESSE", "LESSIVAGE"],
+
+    "besoin_amendement": "TRES_ELEVE",
+
+    "indices": {
+      "drainage": 100
+    }
+  }
+]

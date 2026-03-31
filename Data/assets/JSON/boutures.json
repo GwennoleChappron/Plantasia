@@ -1,0 +1,118 @@
+[
+  {
+    "nom": "BOUTURE_HERBACEE",
+    "niveau_difficulte": "FACILE",
+    "periode": ["PRINTEMPS", "ETE"],
+    "type_tige": "HERBACEE",
+    "plantes_concernees": ["MENTHE", "BASILIC", "COLEUS", "VERVEINE"],
+    "longueur_coupe_cm": {"min": 5, "max": 10},
+    "substrat": "LEGER_DRAINANT",
+    "hormone_bouturage": "OPTIONNEL",
+    "humidite": "ELEVEE",
+    "temperature_c": {"min": 18, "max": 25},
+    "temps_enracinement_jours": {"min": 7, "max": 21},
+    "etapes": [
+      "COUPER_SOUS_NOEUD",
+      "RETRAIT_FEUILLES_BASSES",
+      "PLANTER_SUBSTRAT",
+      "PLACER_LUMIERE_INDIRECTE"
+    ],
+    "taux_reussite": "ELEVE"
+  },
+  {
+    "nom": "BOUTURE_SEMI_LIGNEUSE",
+    "niveau_difficulte": "MOYEN",
+    "periode": ["ETE", "AUTOMNE"],
+    "type_tige": "SEMI_LIGNEUSE",
+    "plantes_concernees": ["ROMARIN", "LAVANDE", "LAURIER", "SAUGE"],
+    "longueur_coupe_cm": {"min": 10, "max": 15},
+    "substrat": "TRES_DRAINANT",
+    "hormone_bouturage": "RECOMMANDE",
+    "humidite": "MOYENNE",
+    "temperature_c": {"min": 18, "max": 22},
+    "temps_enracinement_jours": {"min": 30, "max": 60},
+    "etapes": [
+      "PRELEVER_TIGE_SEMI_RIGIDE",
+      "RETRAIT_FEUILLES_BASSES",
+      "PLANTER_SUBSTRAT",
+      "ARROSAGE_LEGER"
+    ],
+    "taux_reussite": "BON"
+  },
+  {
+    "nom": "BOUTURE_LIGNEUSE",
+    "niveau_difficulte": "MOYEN",
+    "periode": ["AUTOMNE", "HIVER"],
+    "type_tige": "LIGNEUSE",
+    "plantes_concernees": ["GROSEILLIER", "CASSIS", "FIGUIER", "VIGNE"],
+    "longueur_coupe_cm": {"min": 15, "max": 30},
+    "substrat": "MINERAL",
+    "hormone_bouturage": "OPTIONNEL",
+    "humidite": "FAIBLE",
+    "temperature_c": {"min": 5, "max": 15},
+    "temps_enracinement_jours": {"min": 60, "max": 120},
+    "etapes": [
+      "COUPER_BOIS_DORMANT",
+      "PLANTER_2_3_ENTERRES",
+      "ARROSAGE_LEGER"
+    ],
+    "taux_reussite": "MOYEN"
+  },
+  {
+    "nom": "BOUTURE_EAU",
+    "niveau_difficulte": "FACILE",
+    "periode": ["PRINTEMPS", "ETE", "INTERIEUR"],
+    "type_tige": "HERBACEE",
+    "plantes_concernees": ["MENTHE", "POTHOS", "BASILIC"],
+    "longueur_coupe_cm": {"min": 5, "max": 15},
+    "substrat": "EAU",
+    "hormone_bouturage": "NON",
+    "humidite": "IMMERGEE",
+    "temperature_c": {"min": 18, "max": 25},
+    "temps_enracinement_jours": {"min": 7, "max": 21},
+    "etapes": [
+      "COUPER_SOUS_NOEUD",
+      "RETIRER_FEUILLES_EAU",
+      "CHANGER_EAU_REGULIEREMENT"
+    ],
+    "taux_reussite": "TRES_ELEVE"
+  },
+  {
+    "nom": "BOUTURE_FEUILLE",
+    "niveau_difficulte": "MOYEN",
+    "periode": ["PRINTEMPS", "ETE"],
+    "type_tige": "FEUILLE",
+    "plantes_concernees": ["SUCCULENTE", "BEGONIA"],
+    "longueur_coupe_cm": null,
+    "substrat": "TRES_DRAINANT",
+    "hormone_bouturage": "NON",
+    "humidite": "FAIBLE",
+    "temperature_c": {"min": 20, "max": 25},
+    "temps_enracinement_jours": {"min": 21, "max": 45},
+    "etapes": [
+      "PRELEVER_FEUILLE",
+      "SECHAGE",
+      "POSER_SUBSTRAT"
+    ],
+    "taux_reussite": "VARIABLE"
+  },
+  {
+    "nom": "BOUTURE_RACINE",
+    "niveau_difficulte": "DIFFICILE",
+    "periode": ["HIVER"],
+    "type_tige": "RACINE",
+    "plantes_concernees": ["CONSOUDE", "FRAMBOISIER"],
+    "longueur_coupe_cm": {"min": 5, "max": 10},
+    "substrat": "LEGER",
+    "hormone_bouturage": "NON",
+    "humidite": "MOYENNE",
+    "temperature_c": {"min": 10, "max": 15},
+    "temps_enracinement_jours": {"min": 30, "max": 60},
+    "etapes": [
+      "COUPER_RACINE",
+      "PLANTER_HORIZONTAL",
+      "RECOUVRIR"
+    ],
+    "taux_reussite": "FAIBLE"
+  }
+]

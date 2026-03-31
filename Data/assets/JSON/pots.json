@@ -1,0 +1,62 @@
+[
+  {
+    "type_racinaire": "PIVOTANT",
+    "profondeur_pot": "PROFOND",
+    "largeur_pot": "MOYEN",
+    "volume_litres": {"min": 15, "max": 40},
+    "forme_pot": "COLONNE",
+    "materiaux": ["TERRE_CUITE", "GEOTEXTILE"],
+    "plantes_exemples": ["CAROTTE", "LIVECHE", "CORIANDRE"],
+    "drainage": "IMPORTANT",
+    "frequence_rempotage": "RARE",
+    "sensibilite_rempotage": "ELEVEE"
+  },
+  {
+    "type_racinaire": "FASCICULE",
+    "profondeur_pot": "FAIBLE",
+    "largeur_pot": "LARGE",
+    "volume_litres": {"min": 5, "max": 15},
+    "forme_pot": "JARDINIERE",
+    "materiaux": ["PLASTIQUE", "TERRE_CUITE"],
+    "plantes_exemples": ["PERSIL", "CIBOULETTE"],
+    "drainage": "MOYEN",
+    "frequence_rempotage": "ANNUEL",
+    "sensibilite_rempotage": "FAIBLE"
+  },
+  {
+    "type_racinaire": "TRACANT",
+    "profondeur_pot": "FAIBLE",
+    "largeur_pot": "TRES_LARGE",
+    "volume_litres": {"min": 5, "max": 10},
+    "forme_pot": "BAC",
+    "materiaux": ["PLASTIQUE"],
+    "plantes_exemples": ["MENTHE", "FRAISIER"],
+    "drainage": "MOYEN",
+    "frequence_rempotage": "FREQUENT",
+    "sensibilite_rempotage": "FAIBLE"
+  },
+  {
+    "type_racinaire": "LIGNEUX",
+    "profondeur_pot": "PROFOND",
+    "largeur_pot": "LARGE",
+    "volume_litres": {"min": 20, "max": 50},
+    "forme_pot": "BAC",
+    "materiaux": ["TERRE_CUITE", "BOIS"],
+    "plantes_exemples": ["ROMARIN", "LAURIER", "YUZU"],
+    "drainage": "TRES_IMPORTANT",
+    "frequence_rempotage": "TOUS_2_4_ANS",
+    "sensibilite_rempotage": "MOYENNE"
+  },
+  {
+    "type_racinaire": "TUBEREUX",
+    "profondeur_pot": "MOYEN",
+    "largeur_pot": "MOYEN",
+    "volume_litres": {"min": 10, "max": 20},
+    "forme_pot": "STANDARD",
+    "materiaux": ["TERRE_CUITE"],
+    "plantes_exemples": ["DAHLIA", "POMME_DE_TERRE"],
+    "drainage": "ESSENTIEL",
+    "frequence_rempotage": "ANNUEL",
+    "sensibilite_rempotage": "MOYENNE"
+  }
+]
