@@ -84,7 +84,7 @@ inline const EnumMetadata& unknownMetadata() {
 //  2. ENUMS COMMUNS (Partagés entre plusieurs entités)
 // ═════════════════════════════════════════════════════════════════════════════
 enum class NiveauDifficulte { FACILE, MOYEN, DIFFICILE, INCONNU };
-enum class TypeRacinaireEnum { FASCICULE, PIVOTANT, TRACANT, LIGNEUX, TUBEREUX, INCONNU };
+enum class TypeRacinaireEnum { FASCICULE, PIVOTANT, TRACANT, LIGNEUX, TUBEREUX, INCONNU }; 
 enum class Saison { PRINTEMPS, ETE, AUTOMNE, HIVER, INTERIEUR, INCONNU };
 
 namespace EnumInfo {
@@ -152,6 +152,8 @@ enum class ExpositionSoleil { PLEIN_SOLEIL, MI_OMBRE, INCONNU };
 enum class ExpositionVent { MODERE, ABRITE, INCONNU };
 
 namespace EnumInfo {
+
+    // Rusticité
     inline const EnumMetadata& get(Rusticite v) {
         using R = Rusticite;
         static const std::unordered_map<R, EnumMetadata> map {
@@ -163,6 +165,7 @@ namespace EnumInfo {
     }
     inline const char* label(Rusticite v) { return get(v).label.c_str(); }
 
+    // Exposition au soleil
     inline const EnumMetadata& get(ExpositionSoleil v) {
         using E = ExpositionSoleil;
         static const std::unordered_map<E, EnumMetadata> map {
@@ -173,6 +176,7 @@ namespace EnumInfo {
     }
     inline const char* label(ExpositionSoleil v) { return get(v).label.c_str(); }
 
+    // Exposition au vent
     inline const EnumMetadata& get(ExpositionVent v) {
         using E = ExpositionVent;
         static const std::unordered_map<E, EnumMetadata> map {
@@ -210,14 +214,21 @@ enum class RichesseSol { ELEVEE, MOYENNE_ELEVEE, MOYENNE, FAIBLE, INCONNU };
 enum class TextureSol { TRES_LEGER, LEGER_CAILLOUTEUX, LEGERE, AERE, SOUPLE, EQUILIBREE, TRES_FINE, LOURDE, INCONNU };
 enum class CecSol { TRES_ELEVEE, ELEVEE, MOYENNE, FAIBLE, TRES_FAIBLE, INCONNU };
 enum class AerationSol { EXCELLENTE, TRES_ELEVEE, BONNE, MOYENNE, TRES_FAIBLE, INCONNU };
+enum class DensiteSol { TRES_LEGERE, LEGERE, MOYENNE, LOURDE, TRES_LOURDE, INCONNU };
+enum class tamponPh { TRES_FORT, FORT, MOYEN, FAIBLE, TRES_FAIBLE, INCONNU };
 enum class VieMicrobienne { TRES_ELEVEE, MOYENNE, FAIBLE, INCONNU };
 enum class Mineralisation { RAPIDE, MODEREE, LENTE, INCONNU };
 enum class CompatibiliteCalcaire { EXCELLENTE, MOYENNE, TRES_FAIBLE, INCONNU };
+enum class CorrectionAcidite { CHAUX, CENDRES, CALCAIRE, EAU_CALCAIRE, TERREAU_UNIVERSEL, COMPOST, INCONNU };
+enum class CorrectionAlcalinite { TERRE_BRUYERE, SOUFRE, EAU_PLUIE, COMPOST, TERREAU_UNIVERSEL, TERRE_BRUYERE, INCONNU };
+enum class CompositionSol { TOURBE, COMPOST, FIBRES_VEGETALES, SABLE, POUZZOLANE, CALCAIRE, MATIERE_ORGANIQUE_ACIDE, COMPOST_ENRICHI, ENGRAIS_ORGANIQUE, ECORCES, ARGILE, INCONNU };
+enum class risquesSol { TASSEMENT, APPAUVRISSEMENT, COMPACTION, LESSIVAGE, EXCES_AZOTE, CARENCES, PAUVRETE_LONG_TERME, INCONNU };
+enum class frequenceRenouvellement { TOUS_1_2_ANS, TOUS_2_3_ANS, TOUS_3_5_ANS, TOUS_5_10_ANS, TOUS_10_20_ANS, JAMAIS, INCONNU };
+enum class compatibiliteCalcaire { EXCELLENTE, MOYENNE, TRES_FAIBLE, INCONNU };
 
 namespace EnumInfo {
 
-    // --- GETTERS POUR LES SOLS ---
-
+    // Type Sol
     inline const EnumMetadata& get(TypeSol v) {
         static const std::unordered_map<TypeSol, EnumMetadata> map {
             { TypeSol::TERREAU_UNIVERSEL,         { "Universel",      "Polyvalent pour aromatiques.",      Palette::VertDoux  } },
@@ -227,13 +238,14 @@ namespace EnumInfo {
             { TypeSol::SUBSTRAT_AGRUMES,          { "Agrumes",        "Spécial Yuzu/Agrumes.",             Palette::Jaune     } },
             { TypeSol::TERREAU_SEMIS,             { "Semis",          "Très fin et stérile.",              Palette::GrisClair } },
             { TypeSol::SOL_ARGILEUX,              { "Argileux",       "Lourd et fertile.",                 Palette::Brun      } },
-            { T::EPIPHYTE,                        { "Épiphyte",       "Mélange d'écorces et sphaigne.",    Palette::Ecorce    } },
-            { T::DRAINANT,                        { "Drainant",       "Spécial succulentes et cactées.",   Palette::Gris      } },
+            { TypeSol::EPIPHYTE,                  { "Épiphyte",       "Mélange d'écorces et sphaigne.",    Palette::BrunClair } },
+            { TypeSol::DRAINANT,                  { "Drainant",       "Spécial succulentes et cactées.",   Palette::Gris      } },
             { TypeSol::SOL_SABLEUX,               { "Sableux",        "Très drainant.",                    Palette::Sable     } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(TypeSol v) { return get(v).label.c_str(); }
 
+    // Texture Sol
     inline const EnumMetadata& get(TextureSol v) {
         static const std::unordered_map<TextureSol, EnumMetadata> map {
             { TextureSol::TRES_LEGER,        { "Très léger",        "Majoritairement sableux.",                Palette::Sable     } },
@@ -248,6 +260,7 @@ namespace EnumInfo {
     }
     inline const char* label(TextureSol v) { return get(v).label.c_str(); }
 
+    // Drainage Sol
     inline const EnumMetadata& get(DrainageSol v) {
         static const std::unordered_map<DrainageSol, EnumMetadata> map {
             { DrainageSol::TRES_RAPIDE, { "Très rapide", "L'eau traverse immédiatement.",                 Palette::Sable     } },
@@ -260,6 +273,7 @@ namespace EnumInfo {
     }
     inline const char* label(DrainageSol v) { return get(v).label.c_str(); }
 
+    // Rétention Eau Sol
     inline const EnumMetadata& get(RetentionEau v) {
         static const std::unordered_map<RetentionEau, EnumMetadata> map {
             { RetentionEau::TRES_FORTE, { "Très forte", "Sol saturant — espacement arrosages.",           Palette::BleuCiel  } },
@@ -270,6 +284,7 @@ namespace EnumInfo {
     }
     inline const char* label(RetentionEau v) { return get(v).label.c_str(); }
 
+    // Richesse Sol
     inline const EnumMetadata& get(RichesseSol v) {
         static const std::unordered_map<RichesseSol, EnumMetadata> map {
             { RichesseSol::ELEVEE,         { "Élevée",         "Sol très fertile.",                       Palette::VertVif   } },
@@ -280,6 +295,7 @@ namespace EnumInfo {
     }
     inline const char* label(RichesseSol v) { return get(v).label.c_str(); }
 
+    // CEC Sol
     inline const EnumMetadata& get(CecSol v) {
         static const std::unordered_map<CecSol, EnumMetadata> map {
             { CecSol::TRES_ELEVEE, { "Très élevée", "Rétention maximale des engrais.",                    Palette::VertVif   } },
@@ -291,6 +307,7 @@ namespace EnumInfo {
     }
     inline const char* label(CecSol v) { return get(v).label.c_str(); }
 
+    // Aération Sol
     inline const EnumMetadata& get(AerationSol v) {
         static const std::unordered_map<AerationSol, EnumMetadata> map {
             { AerationSol::EXCELLENTE,  { "Excellente",  "Circulation d'air optimale.",                   Palette::VertVif   } },
@@ -302,6 +319,7 @@ namespace EnumInfo {
     }
     inline const char* label(AerationSol v) { return get(v).label.c_str(); }
 
+    // Vie Microbienne Sol
     inline const EnumMetadata& get(VieMicrobienne v) {
         static const std::unordered_map<VieMicrobienne, EnumMetadata> map {
             { VieMicrobienne::TRES_ELEVEE, { "Très élevée", "Sol vivant et actif.",                       Palette::VertVif   } },
@@ -311,6 +329,31 @@ namespace EnumInfo {
     }
     inline const char* label(VieMicrobienne v) { return get(v).label.c_str(); }
 
+    // Densité Sol
+    inline const EnumMetadata& get(DensiteSol v) {
+        static const std::unordered_map<DensiteSol, EnumMetadata> map {
+            { DensiteSol::TRES_LEGERE, { "Très légère", "Sol très aéré, idéal pour semis et boutures.", Palette::Sable     } },
+            { DensiteSol::LEGERE,      { "Légère",      "Sol meuble, facile à travailler.",              Palette::VertPale  } },
+            { DensiteSol::MOYENNE,     { "Moyenne",     "Densité standard, bonne rétention d'eau.",     Palette::VertDoux  } },
+            { DensiteSol::LOURDE,      { "Lourde",      "Sol compact, riche en argile.",                Palette::Brun      } },
+            { DensiteSol::TRES_LOURDE, { "Très lourde", "Sol très compact et collant.",               Palette::BrunClair } }
+        }; ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(DensiteSol v) { return get(v).label.c_str(); }
+
+    // Tampon pH Sol
+    inline const EnumMetadata& get(tamponPh v) {
+        static const std::unordered_map<tamponPh, EnumMetadata> map {
+            { tamponPh::TRES_FORT,  { "Très fort",  "Sol très résistant aux variations de pH.",   Palette::VertVif   } },
+            { tamponPh::FORT,       { "Fort",       "Bonne résistance aux changements de pH.",     Palette::VertDoux  } },
+            { tamponPh::MOYEN,      { "Moyen",      "Résistance modérée aux variations de pH.",    Palette::OrangeDoux} },
+            { tamponPh::FAIBLE,     { "Faible",     "Sol sensible aux changements de pH.",         Palette::Orange    } },
+            { tamponPh::TRES_FAIBLE, { "Très faible", "Sol très sensible, risque de stress pour la plante.", Palette::Rouge     } }
+        }; ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(tamponPh v) { return get(v).label.c_str(); }
+
+    // Mineralisation
     inline const EnumMetadata& get(Mineralisation v) {
         static const std::unordered_map<Mineralisation, EnumMetadata> map {
             { Mineralisation::RAPIDE,   { "Rapide",   "Nutriments disponibles rapidement.",               Palette::VertVif   } },
@@ -320,6 +363,7 @@ namespace EnumInfo {
     }
     inline const char* label(Mineralisation v) { return get(v).label.c_str(); }
 
+    // Compatibilité au calcaire
     inline const EnumMetadata& get(CompatibiliteCalcaire v) {
         static const std::unordered_map<CompatibiliteCalcaire, EnumMetadata> map {
             { CompatibiliteCalcaire::EXCELLENTE,  { "Excellente",  "Tolère et apprécie les sols calcaires.",       Palette::VertVif   } },
@@ -328,18 +372,82 @@ namespace EnumInfo {
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(CompatibiliteCalcaire v) { return get(v).label.c_str(); }
+
+    // Correction Acidité
+    inline const EnumMetadata& get(CorrectionAcidite v) {
+        static const std::unordered_map<CorrectionAcidite, EnumMetadata> map {
+            { CorrectionAcidite::CHAUX,             { "Chaux",             "Élimine l'acidité du sol.",                         Palette::Sable     } },
+            { CorrectionAcidite::CENDRES,           { "Cendres",           "Légère correction de l'acidité.",                   Palette::BrunClair } },
+            { CorrectionAcidite::CALCAIRE,          { "Calcaire",          "Corrige l'acidité et enrichit en calcium.",         Palette::Brun      } },
+            { CorrectionAcidite::EAU_CALCAIRE,      { "Eau calcaire",      "Arrosage avec eau dure pour réduire l'acidité.",    Palette::GrisClair } },
+            { CorrectionAcidite::TERREAU_UNIVERSEL, { "Terreau universel", "Substrat équilibré pour corriger l'acidité.",       Palette::VertDoux  } },
+            { CorrectionAcidite::COMPOST,           { "Compost",           "Amendement organique qui peut réduire l'acidité.",  Palette::VertVif   } }
+        }; ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(CorrectionAcidite v) { return get(v).label.c_str(); }
+
+    // Correction Alcalinité
+    inline const EnumMetadata& get(CorrectionAlcalinite v) {
+        static const std::unordered_map<CorrectionAlcalinite, EnumMetadata> map {
+            { CorrectionAlcalinite::TERRE_BRUYERE,      { "Terre de bruyère",   "Substrat acide pour corriger l'alcalinité.",           Palette::Violet    } },
+            { CorrectionAlcalinite::SOUFRE,             { "Soufre",             "Amendement qui acidifie le sol.",                      Palette::Rouge     } },
+            { CorrectionAlcalinite::EAU_PLUIE,          { "Eau de pluie",       "Arrosage avec eau douce pour réduire l'alcalinité.",   Palette::BleuDoux  } },
+            { CorrectionAlcalinite::COMPOST,            { "Compost",            "Amendement organique qui peut acidifier le sol.",      Palette::VertVif   } },
+            { CorrectionAlcalinite::TERREAU_UNIVERSEL,  { "Terreau universel",  "Substrat équilibré pour corriger l'alcalinité.",       Palette::VertDoux  } },
+            { CorrectionAlcalinite::TERRE_BRUYERE,      { "Terre de bruyère",   "Substrat acide pour corriger l'alcalinité.",           Palette::Violet    } }
+        }; ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(CorrectionAlcalinite v) { return get(v).label.c_str(); }
+
+    // Composition Sol
+    inline const EnumMetadata& get(CompositionSol v) {
+        static const std::unordered_map<CompositionSol, EnumMetadata> map {
+            { CompositionSol::TOURBE,                   { "Tourbe",                 "Matière organique acide, retient bien l'eau.",     Palette::BrunClair } },
+            { CompositionSol::COMPOST,                  { "Compost",                "Matière organique riche en nutriments.",           Palette::VertVif   } },
+            { CompositionSol::FIBRES_VEGETALES,         { "Fibres végétales",       "Amendement organique léger et aéré.",              Palette::VertDoux  } },
+            { CompositionSol::SABLE,                    { "Sable",                  "Particule minérale drainante.",                    Palette::Sable     } },
+            { CompositionSol::POUZZOLANE,               { "Pouzzolane",             "Gravier volcanique léger et drainant.",            Palette::Gris      } },
+            { CompositionSol::CALCAIRE,                 { "Calcaire",               "Particule minérale alcaline.",                     Palette::Brun      } },
+            { CompositionSol::MATIERE_ORGANIQUE_ACIDE,  { "Matière organique acide", "Amendement pour sols acides.",                    Palette::Violet    } },
+            { CompositionSol::COMPOST_ENRICHI,          { "Compost enrichi",        "Compost très riche en nutriments.",                Palette::VertVif   } },
+            { CompositionSol::ENGRAIS_ORGANIQUE,        { "Engrais organique",      "Source concentrée de nutriments naturels.",        Palette::VertDoux  } },
+            { CompositionSol::ECORCES,                  { "Écorces",                "Amendement organique grossier pour aérer le sol.", Palette::BrunClair } },
+            { CompositionSol::ARGILE,                   { "Argile",                 "Particule minérale lourde et collante.",           Palette::Brun      } }
+        }; ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(CompositionSol v) { return get(v).label.c_str(); }
+
+    // Risques Sol
+    inline const EnumMetadata& get(risquesSol v) {
+        static const std::unordered_map<risquesSol, EnumMetadata> map {
+            { risquesSol::TASSEMENT,            { "Tassement",          "Risque de sol compacté, réduire les passages.",                            Palette::Rouge     } },
+            { risquesSol::APPAUVRISSEMENT,      { "Appauvrissement",    "Perte de nutriments, amendement régulier conseillé.",                      Palette::OrangeDoux} },
+            { risquesSol::COMPACTION,           { "Compaction",         "Risque de sol durci, éviter de travailler à la mauvaise période.",         Palette::Rouge     } },
+            { risquesSol::LESSIVAGE,            { "Lessivage",          "Risque de nutriments emportés par les eaux d'arrosage.",                   Palette::BleuDoux  } },
+            { risquesSol::EXCES_AZOTE,          { "Excès d'azote",      "Favorise la croissance au détriment de la floraison.",                     Palette::Orange    } },
+            { risquesSol::CARENCES,             { "Carences",           "Manque de nutriments essentiels, surveiller la fertilité.",                Palette::Rouge     } },
+            { risquesSol::PAUVRETE_LONG_TERME,  { "Pauvreté long terme", "Dégradation progressive du sol, rotation et amendement nécessaires.",     Palette::Rouge     } }
+        }; ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(risquesSol v) { return get(v).label.c_str(); }
 }
 
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  5. POTS.JSON (Spécifique aux Contenants)
+//  5. RACINES.JSON (Spécifique aux Contenants)
 // ═════════════════════════════════════════════════════════════════════════════
 
 enum class FormePot { BAC, COLONNE, JARDINIERE, STANDARD, INCONNU };
-enum class MateriauPot { TERRE_CUITE, PLASTIQUE, BOIS, GEOTEXTILE, INCONNU };
 enum class TypePot { TERRE_CUITE, PLASTIQUE, CERAMIQUE_EMAILLEE, GEOTEXTILE, VERRE, BOIS, INCONNU };
+enum class profondeurPot {FAIBLE, MOYEN, PROFOND, INCONNU};
+enum class LargeurPot { ETROIT, MOYEN, LARGE, TRES_LARGE,INCONNU };
+enum class FrequenceRempotage { FREQUENT, ANNUEL, BI_ANNUEL, RARE, INCONNU };
+enum class SensibiliteRempotage { FAIBLE, MOYENNE, ELEVEE, INCONNU };
+enum class BesoinsDrainage { FAIBLE, MOYEN, ELEVEE, ESSENTIEL, INCONNU }; 
 
 namespace EnumInfo {
+
+    // Forme du pot
     inline const EnumMetadata& get(FormePot v) {
         static const std::unordered_map<FormePot, EnumMetadata> map {
             { FormePot::BAC,       { "Bac",         "Grand contenant carré ou rectangulaire.",  Palette::BrunClair } },
@@ -350,32 +458,84 @@ namespace EnumInfo {
     }
     inline const char* label(FormePot v) { return get(v).label.c_str(); }
 
-    inline const EnumMetadata& get(MateriauPot v) {
-        static const std::unordered_map<MateriauPot, EnumMetadata> map {
-            { MateriauPot::TERRE_CUITE, { "Terre cuite", "Poreux, régule l'humidité, lourd.",      Palette::BrunClair } },
-            { MateriauPot::PLASTIQUE,   { "Plastique",   "Léger, retient bien l'eau.",             Palette::BleuDoux  } },
-            { MateriauPot::BOIS,        { "Bois",        "Naturel et isolant.",                    Palette::Brun      } },
-            { MateriauPot::GEOTEXTILE,  { "Géotextile",  "Aération maximale, anti-spiralisation.", Palette::VertPale  } }
-        }; ENUM_MAP_LOOKUP(map, v)
+    // Type de pot
+    inline const EnumMetadata& get(TypePot v) {
+        using T = TypePot;
+        static const std::unordered_map<T, EnumMetadata> map {
+            { T::TERRE_CUITE,        { "Terre cuite",        "Poreux, favorise l'aération des racines.",    Palette::BrunClair      } },
+            { T::PLASTIQUE,          { "Plastique",          "Garde l'humidité plus longtemps.",            Palette::BleuDoux } },
+            { T::CERAMIQUE_EMAILLEE, { "Céramique émaillée", "Esthétique et imperméable.",                  Palette::VertPale  } },
+            { T::GEOTEXTILE,         { "Géotextile",         "Excellente oxygénation (Air-Pruning).",       Palette::GrisClair} },
+            { T::VERRE,              { "Verre",              "Pour terrariums ou bouturage à l'eau.",       Palette::BleuCiel      } },
+            { T::BOIS,               { "Bois",               "Isolant naturel, aspect rustique.",           Palette::Brun    } }
+        };
+        ENUM_MAP_LOOKUP(map, v)
     }
-    inline const char* label(MateriauPot v) { return get(v).label.c_str(); }
+    inline const char* label(TypePot v) { return get(v).label.c_str(); }
 
-    namespace EnumInfo {
-        inline const EnumMetadata& get(TypePot v) {
-            using T = TypePot;
-            static const std::unordered_map<T, EnumMetadata> map {
-                { T::TERRE_CUITE,        { "Terre cuite",        "Poreux, favorise l'aération des racines.",    Palette::Ocre      } },
-                { T::PLASTIQUE,          { "Plastique",          "Garde l'humidité plus longtemps.",            Palette::GrisFonce } },
-                { T::CERAMIQUE_EMAILLEE, { "Céramique émaillée", "Esthétique et imperméable.",                  Palette::BleuNuit  } },
-                { T::GEOTEXTILE,         { "Géotextile",         "Excellente oxygénation (Air-Pruning).",       Palette::Anthracite} },
-                { T::VERRE,              { "Verre",              "Pour terrariums ou bouturage à l'eau.",       Palette::Cyan      } },
-                { T::BOIS,               { "Bois",               "Isolant naturel, aspect rustique.",           Palette::Marron    } },
-                { T::INCONNU,            { "Inconnu",            "Type de contenant non défini.",               Palette::Neutre    } }
-            };
-            ENUM_MAP_LOOKUP(map, v)
-        }
-        inline const char* label(TypePot v) { return get(v).label.c_str(); }
+    // Profondeur du pot
+    inline const EnumMetadata& get(profondeurPot v) {
+        using P = profondeurPot;
+        static const std::unordered_map<P, EnumMetadata> map {
+            { P::FAIBLE,   { "Faible",   "Moins de 20 cm de profondeur.",           Palette::VertDoux  } },
+            { P::MOYEN,    { "Moyen",    "Entre 20 et 40 cm de profondeur.",        Palette::VertVif   } },
+            { P::PROFOND,  { "Profond",  "Plus de 40 cm de profondeur.",            Palette::BleuDoux  } }
+        };
+        ENUM_MAP_LOOKUP(map, v)
     }
+    inline const char* label(profondeurPot v) { return get(v).label.c_str(); }
+
+    // Largeur du pot
+    inline const EnumMetadata& get(LargeurPot v) {
+        using L = LargeurPot;
+        static const std::unordered_map<L, EnumMetadata> map {
+            { L::ETROIT,      { "Étroit",      "Moins de 20 cm de largeur.",         Palette::VertDoux  } },
+            { L::MOYEN,       { "Moyen",       "Entre 20 et 40 cm de largeur.",      Palette::VertVif   } },
+            { L::LARGE,       { "Large",       "Entre 40 et 60 cm de largeur.",      Palette::BleuDoux  } },
+            { L::TRES_LARGE,  { "Très large",   "Plus de 60 cm de largeur.",         Palette::BleuCiel  } }
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(LargeurPot v) { return get(v).label.c_str(); }
+
+    // Fréquence de rempotage
+    inline const EnumMetadata& get(FrequenceRempotage v) {
+        using F = FrequenceRempotage;
+        static const std::unordered_map<F, EnumMetadata> map {
+            { F::FREQUENT,   { "Fréquent",   "Rempotage recommandé tous les 6 mois.",    Palette::Rouge     } },
+            { F::ANNUEL,     { "Annuel",     "Rempotage recommandé chaque année.",       Palette::Orange    } },
+            { F::BI_ANNUEL,  { "Bi-annuel",  "Rempotage recommandé tous les 2 ans.",     Palette::VertDoux  } },
+            { F::RARE,       { "Rare",       "Rempotage peu fréquent, tous les 3-5 ans.",Palette::VertVif   } }
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(FrequenceRempotage v) { return get(v).label.c_str(); }
+
+    // Sensibilité au rempotage
+    inline const EnumMetadata& get(SensibiliteRempotage v) {
+        using S = SensibiliteRempotage;
+        static const std::unordered_map<S, EnumMetadata> map {
+            { S::FAIBLE,     { "Faible",     "Plante robuste, supporte bien le rempotage.",   Palette::VertVif   } },
+            { S::MOYENNE,    { "Moyenne",    "Plante modérément sensible, rempotage à faire avec précaution.", Palette::VertDoux  } },
+            { S::ELEVEE,     { "Élevée",     "Plante très sensible, rempotage à éviter ou à faire très délicatement.", Palette::Rouge     } }
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(SensibiliteRempotage v) { return get(v).label.c_str(); }
+
+    // Besoins en drainage
+    inline const EnumMetadata& get(BesoinsDrainage v) {
+        using B = BesoinsDrainage;
+        static const std::unordered_map<B, EnumMetadata> map {
+            { B::FAIBLE,     { "Faible",     "Plante tolérante à un drainage limité.",   Palette::VertDoux  } },
+            { B::MOYEN,      { "Moyen",      "Plante nécessitant un drainage modéré.",   Palette::VertVif   } },
+            { B::ELEVEE,     { "Élevé",      "Plante nécessitant un bon drainage.",      Palette::BleuDoux  } },
+            { B::ESSENTIEL,  { "Essentiel",  "Plante nécessitant un drainage optimal.",  Palette::Rouge     } }
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(BesoinsDrainage v) { return get(v).label.c_str(); }
+
 }
 
 
@@ -388,7 +548,7 @@ enum class TypeTige { HERBACEE, SEMI_LIGNEUSE, LIGNEUSE, FEUILLE, RACINE, INCONN
 enum class HormoneBouturage { NON, OPTIONNEL, RECOMMANDE, INCONNU };
 enum class HumiditeBouture { ELEVEE, MOYENNE, FAIBLE, IMMERGEE, INCONNU };
 enum class SubstratBouture { EAU, LEGER, LEGER_DRAINANT, TRES_DRAINANT, MINERAL, INCONNU };
-enum class SubstratBouture { EAU, LEGER, LEGER_DRAINANT, TRES_DRAINANT, MINERAL, INCONNU };
+enum class EtapeBouture { COUPER_SOUS_NOEUD, RETRAIT_FEUILLES_BASSES, PLANTER_SUBSTRAT, PLACER_LUMIERE_INDIRECTE, PRELEVER_TIGE_SEMI_RIGIDE, ARROSAGE_LEGER, COUPER_BOIS_DORMANT, PLANTER_ENTERRES, RETIRER_FEUILLES_EAU, CHANGER_EAU_REGULIEREMENT, PRELEVER_FEUILLE, SECHAGE, POSER_SUBSTRAT, COUPER_RACINE, PLANTER_HORIZONTAL, COUVRIR, INCONNU };
 
 namespace EnumInfo {
     // ── Taux de Réussite ──
@@ -463,6 +623,31 @@ namespace EnumInfo {
     }
     inline const char* label(SubstratBouture v) { return get(v).label.c_str(); }
 
+    // ── Étapes clés du bouturage ──
+    inline const EnumMetadata& get(EtapeBouture v) {
+        using E = EtapeBouture;
+        static const std::unordered_map<E, EnumMetadata> map {
+            { E::COUPER_SOUS_NOEUD,             { "Couper sous nœud",           "Faire une coupe nette juste en dessous d'un nœud pour favoriser l'enracinement.",                      Palette::VertVif   } },
+            { E::RETRAIT_FEUILLES_BASSES,       { "Retrait feuilles basses",    "Enlever les feuilles proches de la base pour éviter la pourriture.",                                   Palette::VertDoux  } },
+            { E::PLANTER_SUBSTRAT,              { "Planter substrat",           "Enfoncer la tige dans le substrat jusqu'à au moins 2-3 cm de profondeur.",                             Palette::BleuDoux  } },
+            { E::PLACER_LUMIERE_INDIRECTE,      { "Placer lumière indirecte",   "Éviter la lumière directe du soleil qui peut dessécher la bouture.",                                   Palette::BleuCiel  } },
+            { E::PRELEVER_TIGE_SEMI_RIGIDE,     { "Prélever tige semi-rigide",  "Utiliser une tige semi-ligneuse pour un meilleur taux de réussite.",                                   Palette::Brun      } },
+            { E::ARROSAGE_LEGER,                { "Arrosage léger",             "Maintenir le substrat légèrement humide sans le détremper.",                                           Palette::Sable     } },
+            { E::COUPER_BOIS_DORMANT,           { "Couper bois dormant",        "Utiliser une tige ligneuse prélevée en période de dormance pour certaines espèces.",                   Palette::BrunClair } },
+            { E::PLANTER_ENTERRES,              { "Planter enterrés",           "Enfouir une partie de la tige sous le substrat pour favoriser l'enracinement.",                        Palette::VertPale  } },
+            { E::RETIRER_FEUILLES_EAU,          { "Retirer feuilles eau",       "Enlever les feuilles immergées pour éviter la pourriture dans les boutures à l'eau.",                  Palette::BleuCiel  } },
+            { E::CHANGER_EAU_REGULIEREMENT,     { "Changer eau régulièrement",  "Renouveler l'eau tous les 2-3 jours pour les boutures à l'eau afin d'éviter les algues.",              Palette::BleuDoux  } },
+            { E::PRELEVER_FEUILLE,              { "Prélever feuille",           "Bouturer à partir d'une feuille entière pour les espèces qui le permettent.",                          Palette::VertPale  } },
+            { E::SECHAGE,                       { "Séchage",                    "Laisser sécher la coupe à l'air libre pendant quelques heures avant de planter.",                      Palette::Sable     } },
+            { E::POSER_SUBSTRAT,                { "Poser substrat",             "Placer la bouture sur le substrat sans l'enfoncer pour les espèces sensibles.",                        Palette::VertDoux  } },
+            { E::COUPER_RACINE,                 { "Couper racine",              "Tailler légèrement les racines avant de rempoter pour stimuler la croissance.",                        Palette::Brun      } },
+            { E::PLANTER_HORIZONTAL,            { "Planter horizontal",         "Placer la tige à l'horizontale sous le substrat pour favoriser l'apparition de nouvelles pousses.",    Palette::VertVif   } },
+            { E::COUVRIR,                       { "Couvrir",                    "Recouvrir la bouture d'un sac plastique ou d'une mini-serre pour maintenir l'humidité.",               Palette::BleuCiel  } }
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(EtapeBouture v) { return get(v).label.c_str(); }
+
 } // namespace EnumInfo
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -483,7 +668,7 @@ namespace EnumInfo {
         static const std::unordered_map<std::string, TypeRacinaireEnum> m {
             {"FASCICULE", TypeRacinaireEnum::FASCICULE}, {"PIVOTANT", TypeRacinaireEnum::PIVOTANT}, 
             {"TRACANT", TypeRacinaireEnum::TRACANT}, {"LIGNEUX", TypeRacinaireEnum::LIGNEUX}, 
-            {"TUBEREUX", TypeRacinaireEnum::TUBEREUX}}; // <- AJOUT DE TUBEREUX ICI
+            {"TUBEREUX", TypeRacinaireEnum::TUBEREUX}};
         auto it = m.find(s); return it != m.end() ? it->second : TypeRacinaireEnum::INCONNU;
     }
 
@@ -565,22 +750,83 @@ namespace EnumInfo {
         auto it = m.find(s); return it != m.end() ? it->second : CompatibiliteCalcaire::INCONNU;
     }
 
-    // --- POTS.JSON ---
+    inline CorrectionAcidite parseCorrectionAcidite(const std::string& s) {
+        static const std::unordered_map<std::string, CorrectionAcidite> m {
+            {"CHAUX", CorrectionAcidite::CHAUX}, {"CENDRES", CorrectionAcidite::CENDRES}, {"CALCAIRE", CorrectionAcidite::CALCAIRE},
+            {"EAU_CALCAIRE", CorrectionAcidite::EAU_CALCAIRE}, {"TERREAU_UNIVERSEL", CorrectionAcidite::TERREAU_UNIVERSEL}, {"COMPOST", CorrectionAcidite::COMPOST}};
+        auto it = m.find(s); return it != m.end() ? it->second : CorrectionAcidite::INCONNU;
+    }
+
+    inline CorrectionAlcalinite parseCorrectionAlcalinite(const std::string& s) {
+        static const std::unordered_map<std::string, CorrectionAlcalinite> m {
+            {"TERRE_BRUYERE", CorrectionAlcalinite::TERRE_BRUYERE}, {"SOUFRE", CorrectionAlcalinite::SOUFRE}, {"EAU_PLUIE", CorrectionAlcalinite::EAU_PLUIE},
+            {"COMPOST", CorrectionAlcalinite::COMPOST}, {"TERREAU_UNIVERSEL", CorrectionAlcalinite::TERREAU_UNIVERSEL}, {"TERRE_BRUYERE", CorrectionAlcalinite::TERRE_BRUYERE}};
+        auto it = m.find(s); return it != m.end() ? it->second : CorrectionAlcalinite::INCONNU;
+    }
+
+    inline CompositionSol parseCompositionSol(const std::string& s) {
+        static const std::unordered_map<std::string, CompositionSol> m {
+            {"TOURBE", CompositionSol::TOURBE}, {"COMPOST", CompositionSol::COMPOST}, {"FIBRES_VEGETALES", CompositionSol::FIBRES_VEGETALES},
+            {"SABLE", CompositionSol::SABLE}, {"POUZZOLANE", CompositionSol::POUZZOLANE}, {"CALCAIRE", CompositionSol::CALCAIRE},
+            {"MATIERE_ORGANIQUE_ACIDE", CompositionSol::MATIERE_ORGANIQUE_ACIDE}, {"COMPOST_ENRICHI", CompositionSol::COMPOST_ENRICHI},
+            {"ENGRAIS_ORGANIQUE", CompositionSol::ENGRAIS_ORGANIQUE}, {"ECORCES", CompositionSol::ECORCES}, {"ARGILE", CompositionSol::ARGILE}};
+        auto it = m.find(s); return it != m.end() ? it->second : CompositionSol::INCONNU;
+    }
+
+    inline risquesSol parseRisquesSol(const std::string& s) {
+        static const std::unordered_map<std::string, risquesSol> m {
+            {"TASSEMENT", risquesSol::TASSEMENT}, {"APPAUVRISSEMENT", risquesSol::APPAUVRISSEMENT}, {"COMPACTION", risquesSol::COMPACTION},
+            {"LESSIVAGE", risquesSol::LESSIVAGE}, {"EXCES_AZOTE", risquesSol::EXCES_AZOTE}, {"CARENCES", risquesSol::CARENCES},
+            {"PAUVRETE_LONG_TERME", risquesSol::PAUVRETE_LONG_TERME}};
+        auto it = m.find(s); return it != m.end() ? it->second : risquesSol::INCONNU;
+    }
+
+    // --- RACINES.JSON ---
     inline FormePot parseFormePot(const std::string& s) {
         static const std::unordered_map<std::string, FormePot> m {
             {"BAC", FormePot::BAC}, {"COLONNE", FormePot::COLONNE}, {"JARDINIERE", FormePot::JARDINIERE}, {"STANDARD", FormePot::STANDARD}};
         auto it = m.find(s); return it != m.end() ? it->second : FormePot::INCONNU;
     }
 
-    inline MateriauPot parseMateriauPot(const std::string& s) {
-        static const std::unordered_map<std::string, MateriauPot> m {
-            {"TERRE_CUITE", MateriauPot::TERRE_CUITE}, {"PLASTIQUE", MateriauPot::PLASTIQUE}, 
-            {"BOIS", MateriauPot::BOIS}, {"GEOTEXTILE", MateriauPot::GEOTEXTILE}};
-        auto it = m.find(s); return it != m.end() ? it->second : MateriauPot::INCONNU;
+    inline TypePot parseTypePot(const std::string& s) {
+        static const std::unordered_map<std::string, TypePot> m {
+            {"TERRE_CUITE", TypePot::TERRE_CUITE}, {"PLASTIQUE", TypePot::PLASTIQUE}, 
+            {"BOIS", TypePot::BOIS}, {"GEOTEXTILE", TypePot::GEOTEXTILE}};
+        auto it = m.find(s); return it != m.end() ? it->second : TypePot::INCONNU;
+    }
+
+    inline profondeurPot parseProfondeurPot(const std::string& s) {
+        static const std::unordered_map<std::string, profondeurPot> m {
+            {"FAIBLE", profondeurPot::FAIBLE}, {"MOYEN", profondeurPot::MOYEN}, {"PROFOND", profondeurPot::PROFOND}};
+        auto it = m.find(s); return it != m.end() ? it->second : profondeurPot::INCONNU;
+    }
+
+    inline LargeurPot parseLargeurPot(const std::string& s) {
+        static const std::unordered_map<std::string, LargeurPot> m {
+            {"ETROIT", LargeurPot::ETROIT}, {"MOYEN", LargeurPot::MOYEN}, {"LARGE", LargeurPot::LARGE}, {"TRES_LARGE", LargeurPot::TRES_LARGE}};
+        auto it = m.find(s); return it != m.end() ? it->second : LargeurPot::INCONNU;
+    }
+
+    inline FrequenceRempotage parseFrequenceRempotage(const std::string& s) {
+        static const std::unordered_map<std::string, FrequenceRempotage> m {
+            {"FREQUENT", FrequenceRempotage::FREQUENT}, {"ANNUEL", FrequenceRempotage::ANNUEL}, 
+            {"BI_ANNUEL", FrequenceRempotage::BI_ANNUEL}, {"RARE", FrequenceRempotage::RARE}};
+        auto it = m.find(s); return it != m.end() ? it->second : FrequenceRempotage::INCONNU;
+    }
+
+    inline SensibiliteRempotage parseSensibiliteRempotage(const std::string& s) {
+        static const std::unordered_map<std::string, SensibiliteRempotage> m {
+            {"FAIBLE", SensibiliteRempotage::FAIBLE}, {"MOYENNE", SensibiliteRempotage::MOYENNE}, {"ELEVEE", SensibiliteRempotage::ELEVEE}};
+        auto it = m.find(s); return it != m.end() ? it->second : SensibiliteRempotage::INCONNU;
+    }
+
+    inline BesoinsDrainage parseBesoinsDrainage(const std::string& s) {
+        static const std::unordered_map<std::string, BesoinsDrainage> m {
+            {"FAIBLE", BesoinsDrainage::FAIBLE}, {"MOYEN", BesoinsDrainage::MOYEN}, {"ELEVEE", BesoinsDrainage::ELEVEE}, {"ESSENTIEL", BesoinsDrainage::ESSENTIEL}};
+        auto it = m.find(s); return it != m.end() ? it->second : BesoinsDrainage::INCONNU;
     }
 
     // --- BOUTURES.JSON ---
-    // (J'ai appliqué la même technique de unordered_map pour la performance !)
     inline TauxReussite parseTauxReussite(const std::string& s) {
         static const std::unordered_map<std::string, TauxReussite> m {
             {"TRES_ELEVE", TauxReussite::TRES_ELEVE}, {"ELEVE", TauxReussite::ELEVE}, {"BON", TauxReussite::BON},
@@ -613,6 +859,19 @@ namespace EnumInfo {
             {"EAU", SubstratBouture::EAU}, {"LEGER", SubstratBouture::LEGER}, {"LEGER_DRAINANT", SubstratBouture::LEGER_DRAINANT},
             {"TRES_DRAINANT", SubstratBouture::TRES_DRAINANT}, {"MINERAL", SubstratBouture::MINERAL}};
         auto it = m.find(s); return it != m.end() ? it->second : SubstratBouture::INCONNU;
+    }
+
+    inline EtapeBouture parseEtape(const std::string& s) { 
+        static const std::unordered_map<std::string, EtapeBouture> m {
+            {"COUPER_SOUS_NOEUD", EtapeBouture::COUPER_SOUS_NOEUD}, {"RETRAIT_FEUILLES_BASSES", EtapeBouture::RETRAIT_FEUILLES_BASSES},
+            {"PLANTER_SUBSTRAT", EtapeBouture::PLANTER_SUBSTRAT}, {"PLACER_LUMIERE_INDIRECTE", EtapeBouture::PLACER_LUMIERE_INDIRECTE},
+            {"PRELEVER_TIGE_SEMI_RIGIDE", EtapeBouture::PRELEVER_TIGE_SEMI_RIGIDE}, {"ARROSAGE_LEGER", EtapeBouture::ARROSAGE_LEGER},
+            {"COUPER_BOIS_DORMANT", EtapeBouture::COUPER_BOIS_DORMANT}, {"PLANTER_ENTERRES", EtapeBouture::PLANTER_ENTERRES},
+            {"RETIRER_FEUILLES_EAU", EtapeBouture::RETIRER_FEUILLES_EAU}, {"CHANGER_EAU_REGULIEREMENT", EtapeBouture::CHANGER_EAU_REGULIEREMENT},
+            {"PRELEVER_FEUILLE", EtapeBouture::PRELEVER_FEUILLE}, {"SECHAGE", EtapeBouture::SECHAGE},
+            {"POSER_SUBSTRAT", EtapeBouture::POSER_SUBSTRAT}, {"COUPER_RACINE", EtapeBouture::COUPER_RACINE},
+            {"PLANTER_HORIZONTAL", EtapeBouture::PLANTER_HORIZONTAL}, {"COUVRIR", EtapeBouture::COUVRIR}};
+        auto it = m.find(s); return it != m.end() ? it->second : EtapeBouture::INCONNU;
     }
 
 } // namespace EnumInfo

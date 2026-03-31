@@ -145,28 +145,27 @@ bool DataLoader::chargerSols(const std::string& chemin, std::vector<Soil>& out) 
     for (const auto& item : j) {
         Soil s;
         s.typeSol      = str(item, "type_sol");
-        s.texture      = str(item, "texture");
-        s.drainage     = str(item, "drainage");
-        s.retentionEau = str(item, "retention_eau");
-        s.richesse     = str(item, "richesse");
+        s.texture      = EnumInfo::parseTexture(str(item, "texture"));
+        s.drainage     = EnumInfo::parseDrainage(str(item, "drainage"));
+        s.retentionEau = EnumInfo::parseRetentionEau(str(item, "retention_eau"));
+        s.richesse     = EnumInfo::parseRichesse(str(item, "richesse"));
 
         if (item.contains("ph") && item["ph"].is_object()) {
             s.phMin = flottant(item["ph"], "min");
             s.phMax = flottant(item["ph"], "max");
         }
 
-        s.composition  = tableau(item, "composition");
+        s.composition  = tableauEnum<Substrat>(item, "composition", EnumInfo::parseSubstrat);
         s.utilisation  = str(item, "utilisation");
         s.adaptePour   = tableau(item, "adapte_pour");
-        s.problemes    = tableau(item, "problemes");
-        s.risques      = tableau(item, "risques");
+        s.risques      = tableauEnum<Risque>(item, "risques", EnumInfo::parseRisque);
 
         if (item.contains("correction_ph") && item["correction_ph"].is_object()) {
             s.correctionBaisser   = tableau(item["correction_ph"], "BAISSER");
             s.correctionAugmenter = tableau(item["correction_ph"], "AUGMENTER");
         }
 
-        s.cec                   = str(item, "cec");
+        s.cec                   = EnumInfo::parseCEC(str(item, "cec"));
         s.aeration              = str(item, "aeration");
         s.densite               = str(item, "densite");
         s.tamponPh              = str(item, "tampon_ph");
@@ -207,13 +206,13 @@ bool DataLoader::chargerPots(const std::string& chemin, std::vector<Pot>& out) {
     for (const auto& item : j) {
         Pot p;
         p.typeRacinaire       = EnumInfo::parseTypeRacinaire(str(item, "type_racinaire"));
-        p.profondeurPot       = str(item, "profondeur_pot");
-        p.largeurPot          = str(item, "largeur_pot");
-        p.formePot            = str(item, "forme_pot");
-        p.drainage            = str(item, "drainage");
-        p.frequenceRempotage  = str(item, "frequence_rempotage");
-        p.sensibiliteRempotage= str(item, "sensibilite_rempotage");
-        p.materiaux           = tableau(item, "materiaux");
+        p.profondeurPot       = EnumInfo::parseProfondeurPot(str(item, "profondeur_pot"));
+        p.largeurPot          = EnumInfo::parseLargeurPot(str(item, "largeur_pot"));
+        p.formePot            = EnumInfo::parseFormePot(str(item, "forme_pot"));
+        p.drainage            = EnumInfo::parseDrainage(str(item, "drainage"));
+        p.frequenceRempotage  = EnumInfo::parseFrequenceRempotage(str(item, "frequence_rempotage"));
+        p.sensibiliteRempotage= EnumInfo::parseSensibiliteRempotage(str(item, "sensibilite_rempotage"));
+        p.materiaux           = tableauEnum<FormePot> (item, "materiaux", EnumInfo::parseTypePot);
         p.plantesExemples     = tableau(item, "plantes_exemples");
 
         if (item.contains("volume_litres") && item["volume_litres"].is_object()) {
