@@ -25,18 +25,33 @@ set(IMGUI_SOURCES
     "external/imgui-sfml/imgui-SFML.cpp" 
 )
 
-# On compile tout, y compris notre nouveau fichier glad.c !
-add_executable(Plantasia ${SOURCES} ${IMGUI_SOURCES} "external/glad/src/glad.c")
+# NOUVEAU : On n'ajoute glad.c que si on n'est PAS sur Mac
+if (NOT APPLE)
+    set(GLAD_SOURCES "external/glad/src/glad.c")
+else()
+    set(GLAD_SOURCES "")
+endif()
+
+# On compile avec GLAD seulement si la variable le contient
+add_executable(Plantasia ${SOURCES} ${IMGUI_SOURCES} ${GLAD_SOURCES})
 
 # --- LES CHEMINS D'INCLUSION ---
 target_include_directories(Plantasia PUBLIC 
-    src                              
-    external                         
-    external/imgui-sfml              
-    ${imgui_SOURCE_DIR}              
-    ${imgui_SOURCE_DIR}/backends     
-    external/glad/include            # <--- On dit au compilo où trouver <glad/glad.h>
+    src                                
+    external                           
+    external/imgui-sfml                
+    ${imgui_SOURCE_DIR}                
+    ${imgui_SOURCE_DIR}/backends       
 )
+
+if (NOT APPLE)
+    message(STATUS "[SunGPU] Compute shaders activés (non-macOS)")
+    target_compile_definitions(Plantasia PRIVATE SUNGPU_HAS_COMPUTE)
+    # J'ai retiré "target_link_libraries(Plantasia glad)" car on compile déjà glad.c juste au-dessus !
+    target_include_directories(Plantasia PUBLIC external/glad/include)
+else()
+    message(STATUS "[SunGPU] CPU fallback (macOS)")
+endif()            
 
 # --- Liens ---
 find_package(OpenGL REQUIRED)
