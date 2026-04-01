@@ -1,8 +1,9 @@
 #include "DataLoader.hpp"
-#include "Data/EnumInfo"
+#include "Data/EnumInfo.hpp"
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <cmath>
 
 using json = nlohmann::json;
 
@@ -27,6 +28,31 @@ bool ouvrirJson(const std::string& chemin, json& out) {
     }
     return true;
 }
+// Lit une string JSON avec une valeur par défaut si la clé est absente ou null.
+std::string str(const json& j, const std::string& key, const std::string& def = "") {
+    if (!j.contains(key) || j[key].is_null()) return def;
+    return j[key].get<std::string>();
+}
+ 
+// Lit un int JSON avec une valeur par défaut.
+int entier(const json& j, const std::string& key, int def = 0) {
+    if (!j.contains(key) || j[key].is_null()) return def;
+    return j[key].get<int>();
+}
+ 
+// Lit un float JSON avec une valeur par défaut.
+float flottant(const json& j, const std::string& key, float def = 0.f) {
+    if (!j.contains(key) || j[key].is_null()) return def;
+    return j[key].get<float>();
+}
+ 
+// Lit un bool depuis une string "OUI"/"NON" ou un bool JSON.
+bool booleen(const json& j, const std::string& key, bool def = false) {
+    if (!j.contains(key) || j[key].is_null()) return def;
+    if (j[key].is_boolean()) return j[key].get<bool>();
+    if (j[key].is_string())  return j[key].get<std::string>() == "OUI";
+    return def;
+}
 
 template <typename EnumType, typename ParseFunction>
 std::vector<EnumType> tableauEnum(const json& item, const std::string& key, ParseFunction parser) {
@@ -43,6 +69,43 @@ std::vector<EnumType> tableauEnum(const json& item, const std::string& key, Pars
     return resultat;
 }
 
+template <typename EnumType, typename ParseFunction>
+std::unordered_map<EnumType, int> dictionnaireEnum(const json& item, const std::string& key, ParseFunction parser) {
+    std::unordered_map<EnumType, int> resultat;
+    
+    if (item.contains(key) && item[key].is_object()) {
+        for (const auto& [json_key, json_val] : item[key].items()) {
+            if (json_val.is_number_integer()) {
+                EnumType enumKey = parser(json_key);
+                resultat[enumKey] = json_val.get<float>();
+            }
+        }
+    }
+    return resultat;
+}
+
+template <typename EnumType>
+void normaliserPourcentages(std::unordered_map<EnumType, float>& proportions) {
+    if (proportions.empty()) return;
+
+    float somme_initiale = 0;
+    for (const auto& [cle, valeur] : proportions) {
+        somme_initiale += valeur;
+    }
+
+    if (std::abs(somme_initiale - 100.0f) < 0.1f) {return;}
+
+    if (somme_initiale == 0) {
+        std::cerr << "Avertissement : La somme totale est de 0." << std::endl;
+        return;
+    }
+
+    float somme_finale = 0;
+    for (auto& [cle, valeur] : proportions) {
+        valeur = (valeur * 100) / somme_initiale; 
+        somme_finale += valeur;
+    }
+}
 } // namespace (anonyme)
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,48 +115,97 @@ std::vector<EnumType> tableauEnum(const json& item, const std::string& key, Pars
 bool DataLoader::chargerPlantes(const std::string& chemin, std::vector<Plant>& out) {
     json j;
     if (!ouvrirJson(chemin, j)) return false;
-    if (!j.is_array()) {
-        std::cerr << "[DataLoader] encyclopedia.json : tableau attendu à la racine.\n";
-        return false;
-    }
-
+ 
     out.clear();
     out.reserve(j.size());
-
+ 
     for (const auto& item : j) {
         Plant p;
-
-        // Identité
-        p.nom             = str(item, "nom");
-        p.nomScientifique = str(item, "nom_scientifique");
-        p.autresNoms      = tableau(item, "autres_noms");
-        p.type            = entier(item, "type");
-        p.famille         = str(item, "famille");
-        p.origine         = str(item, "origine");
-
-        // Culture
-        p.rusticite       = EnumInfo::parseRusticite(str(item, "rusticite"));
-        p.zoneClimat      = str(item, "zone_climat");
-        p.exposition      = EnumInfo::parseExposition(str(item, "exposition_soleil"));
-        p.expositionVent  = EnumInfo::parseVent(str(item, "exposition_vent"));
-        p.volumePotMin    = str(item, "volume_pot_min");
-        p.dimensionsAdulte= str(item, "dimensions_adulte");
-        p.difficulte      = EnumInfo::parseDifficulte(str(item, "niveau_difficulte"));
-
-        // Arrosage
-        p.besoinEau       = entier(item, "besoin_eau");
-        p.frequenceEte    = str(item, "frequence_arrosage_ete");
-        p.frequenceHiver  = str(item, "frequence_arrosage_hiver");
-
-        // Calendrier
-        p.floraisonDebut  = entier(item, "floraison_debut");
-        p.floraisonFin    = entier(item, "floraison_fin");
-        p.recolteDebut    = entier(item, "recolte_debut");
-        p.recolteFin      = entier(item, "recolte_fin");
-
-        // Conseils
-        p.feuillage        = str(item, "feuillage");
-        p.conseilTerre     = str(item, "conseil_terre");
+ 
+        // ── Identité ─────────────────────────────────────────────────────────
+        p.nom              = str(item, "nom");
+        p.nomScientifique  = str(item, "nom_scientifique");
+        p.autresNoms       = tableau(item, "autres_noms");
+        p.type             = entier(item, "type");
+        p.famille          = str(item, "famille");
+        p.origine          = str(item, "origine");
+ 
+        // ── Culture ──────────────────────────────────────────────────────────
+        p.rusticite        = EnumInfo::parseRusticite(str(item, "rusticite"));
+        p.zoneClimat       = str(item, "zone_climat");
+        p.expositionSoleil = EnumInfo::parseExpositionSoleil(str(item, "exposition_soleil"));
+        p.expositionVent   = EnumInfo::parseExpositionVent(str(item, "exposition_vent"));
+        p.volumePotMin     = str(item, "volume_pot_min");
+        p.dimensionsAdulte = str(item, "dimensions_adulte");
+        p.difficulte       = EnumInfo::parseDifficulte(str(item, "niveau_difficulte"));
+ 
+        // ── Arrosage ─────────────────────────────────────────────────────────
+        p.besoinEau        = entier(item, "besoin_eau");
+        p.frequenceEte     = str(item, "frequence_arrosage_ete");
+        p.frequenceHiver   = str(item, "frequence_arrosage_hiver");
+ 
+        // ── Calendrier ───────────────────────────────────────────────────────
+        p.floraisonDebut   = entier(item, "floraison_debut");
+        p.floraisonFin     = entier(item, "floraison_fin");
+        p.recolteDebut     = entier(item, "recolte_debut");
+        p.recolteFin       = entier(item, "recolte_fin");
+ 
+        // ── Caractéristiques — nouvelles enums ───────────────────────────────
+        p.vitesseCroissance   = EnumInfo::parseVitesseCroissance(str(item, "vitesse_croissance"));
+        p.toleranceSecheresse = EnumInfo::parseToleranceSecheresse(str(item, "tolerance_secheresse"));
+        p.sensibiliteExcesEau = EnumInfo::parseSensibiliteEau(str(item, "sensibilite_exces_eau"));
+        p.feuillage           = EnumInfo::parseTypeFeuillage(str(item, "feuillage"));
+ 
+        // ── Sol — DUAL FIELD ─────────────────────────────────────────────────
+        //
+        //  solEnum  ← "sol_recommande"  (clé vers sols.json)
+        //  solTexte ← "conseil_terre"   (nuance narrative propre à la plante)
+        //  phNote   ← "ph_sol"          (seulement si différent du sol général)
+ 
+        p.solEnum            = EnumInfo::typeSolFromString(str(item, "sol_recommande"));
+        p.solAlternatifEnum  = EnumInfo::typeSolFromString(str(item, "sol_alternatif"));
+        p.solTexte           = str(item, "conseil_terre");
+        p.phNote             = str(item, "ph_sol");   // vide pour 11/16 plantes → normal
+ 
+        // ── Type racinaire — DUAL FIELD ──────────────────────────────────────
+        //
+        //  typeRacinaireEnum  ← "type_racinaire_pot"  (clé vers pots.json)
+        //  typeRacinaireTexte ← "type_racinaire"      (description botanique)
+ 
+        p.typeRacinaireEnum  = EnumInfo::parseTypeRacinaire(str(item, "type_racinaire_pot"));
+        p.typeRacinaireTexte = str(item, "type_racinaire");   // "Superficiel fasciculé" etc.
+ 
+        // ── Toxicité — SPLITÉE ───────────────────────────────────────────────
+        //
+        //  La valeur JSON est une string mixte : "OUI (Toxique si ingéré en grande quantité)"
+        //  On split : bool = commence par "OUI", texte = tout le reste entre parenthèses
+ 
+        {
+            const std::string tox = str(item, "toxicite_animaux");
+            p.toxiciteAnimaux = (tox.substr(0, 3) == "OUI");
+ 
+            // Extraire la note entre parenthèses si présente
+            const auto debut = tox.find('(');
+            const auto fin   = tox.rfind(')');
+            if (debut != std::string::npos && fin != std::string::npos && fin > debut)
+                p.toxiciteNote = tox.substr(debut + 1, fin - debut - 1);
+            // Cas spéciaux sans parenthèses
+            else if (tox == "Sans danger (Pet-friendly)")
+                p.toxiciteNote = "Pet-friendly";
+        }
+ 
+        // ── Score ─────────────────────────────────────────────────────────────
+        p.scoreBalcon = entier(item, "score_balcon");
+ 
+        // ── Relations — enum[] au lieu de string[] ────────────────────────────
+        {
+            const auto& bRaw = tableau(item, "boutures_compatibles");
+            p.bouturesCompatibles.reserve(bRaw.size());
+            for (const auto& s : bRaw)
+                p.bouturesCompatibles.push_back(EnumInfo::parseTypeBouture(s));
+        }
+ 
+        // ── Conseils texte (irréductibles) ───────────────────────────────────
         p.conseilArrosage  = str(item, "conseil_arrosage");
         p.rempotage        = str(item, "rempotage");
         p.conseilEntretien = str(item, "conseil_entretien");
@@ -103,30 +215,11 @@ bool DataLoader::chargerPlantes(const std::string& chemin, std::vector<Plant>& o
         p.precautions      = str(item, "precautions");
         p.notes            = str(item, "notes");
         p.astucePro        = str(item, "astuce_pro");
-        p.phSol            = str(item, "ph_sol");
         p.multiplication   = str(item, "multiplication");
-
-        // Caractéristiques
-        p.toleranceSecheresse = str(item, "tolerance_secheresse");
-        p.sensibiliteExcesEau = str(item, "sensibilite_exces_eau");
-        p.vitesseCroissance   = str(item, "vitesse_croissance");
-        p.typeRacinaireTexte  = str(item, "type_racinaire");
-
-        // Toxicité
-        p.toxiciteAnimaux = (str(item, "toxicite_animaux") == "OUI");
-
-        // Score
-        p.scoreBalcon = entier(item, "score_balcon");
-
-        // Relations (clés JSON brutes — la résolution se fait dans DatabaseManager)
-        p.solRecommande      = str(item, "sol_recommande");
-        p.solAlternatif      = str(item, "sol_alternatif");
-        p.typeRacinairePot   = EnumInfo::parseTypeRacinaire(str(item, "type_racinaire_pot"));
-        p.bouturesCompatibles= tableau(item, "boutures_compatibles");
-
+ 
         out.push_back(std::move(p));
     }
-
+ 
     std::cout << "[DataLoader] " << out.size() << " plantes chargées depuis " << chemin << "\n";
     return true;
 }
@@ -155,7 +248,8 @@ bool DataLoader::chargerSols(const std::string& chemin, std::vector<Soil>& out) 
             s.phMax = flottant(item["ph"], "max");
         }
 
-        s.composition  = tableauEnum<Substrat>(item, "composition", EnumInfo::parseSubstrat);
+        s.composition  = dictionnaireEnum<CompositionSol>(item, "composition", EnumInfo::parseCompositionSol);
+        normaliserPourcentages(s.composition);
         s.utilisation  = str(item, "utilisation");
         s.adaptePour   = tableau(item, "adapte_pour");
         s.risques      = tableauEnum<Risque>(item, "risques", EnumInfo::parseRisque);
@@ -165,12 +259,12 @@ bool DataLoader::chargerSols(const std::string& chemin, std::vector<Soil>& out) 
             s.correctionAugmenter = tableau(item["correction_ph"], "AUGMENTER");
         }
 
-        s.cec                   = EnumInfo::parseCEC(str(item, "cec"));
-        s.aeration              = str(item, "aeration");
-        s.densite               = str(item, "densite");
-        s.tamponPh              = str(item, "tampon_ph");
-        s.mineralisation        = str(item, "mineralisation");
-        s.vieMicrobienne        = str(item, "vie_microbienne");
+        s.cec                   = EnumInfo::parseCec(str(item, "cec"));
+        s.aeration              = EnumInfo::parseAeration(str(item, "aeration"));
+        s.densite               = EnumInfo::parseDensite(str(item, "densite"));
+        s.tamponPh              = EnumInfo::parseTamponPh(str(item, "tampon_ph"));
+        s.mineralisation        = EnumInfo::parseMineralisation(str(item, "mineralisation"));
+        s.vieMicrobienne        = EnumInfo::parseVieMicrobienne(str(item, "vie_microbienne"));
         s.frequenceRenouvellement = str(item, "frequence_renouvellement");
         s.compatibiliteCalcaire = str(item, "compatibilite_calcaire");
 
@@ -193,10 +287,10 @@ bool DataLoader::chargerSols(const std::string& chemin, std::vector<Soil>& out) 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  chargerPots — pots.json
+//  chargerRacines — racines.json
 // ─────────────────────────────────────────────────────────────────────────────
 
-bool DataLoader::chargerPots(const std::string& chemin, std::vector<Pot>& out) {
+bool DataLoader::chargerRacines(const std::string& chemin, std::vector<Racine>& out) {
     json j;
     if (!ouvrirJson(chemin, j)) return false;
 
@@ -204,23 +298,23 @@ bool DataLoader::chargerPots(const std::string& chemin, std::vector<Pot>& out) {
     out.reserve(j.size());
 
     for (const auto& item : j) {
-        Pot p;
-        p.typeRacinaire       = EnumInfo::parseTypeRacinaire(str(item, "type_racinaire"));
-        p.profondeurPot       = EnumInfo::parseProfondeurPot(str(item, "profondeur_pot"));
-        p.largeurPot          = EnumInfo::parseLargeurPot(str(item, "largeur_pot"));
-        p.formePot            = EnumInfo::parseFormePot(str(item, "forme_pot"));
-        p.drainage            = EnumInfo::parseDrainage(str(item, "drainage"));
-        p.frequenceRempotage  = EnumInfo::parseFrequenceRempotage(str(item, "frequence_rempotage"));
-        p.sensibiliteRempotage= EnumInfo::parseSensibiliteRempotage(str(item, "sensibilite_rempotage"));
-        p.materiaux           = tableauEnum<FormePot> (item, "materiaux", EnumInfo::parseTypePot);
-        p.plantesExemples     = tableau(item, "plantes_exemples");
+        Racine r;
+        r.typeRacinaire       = EnumInfo::parseTypeRacinaire(str(item, "type_racinaire"));
+        r.profondeurPot       = EnumInfo::parseProfondeurPot(str(item, "profondeur_pot"));
+        r.largeur          = EnumInfo::parseLargeurPot(str(item, "largeur_pot"));
+        r.formePot            = EnumInfo::parseFormePot(str(item, "forme_pot"));
+        r.drainage            = EnumInfo::parseBesoinDrainage(str(item, "drainage"));
+        r.frequenceRempotage  = EnumInfo::parseFrequenceRempotage(str(item, "frequence_rempotage"));
+        r.sensibiliteRempotage= EnumInfo::parseSensibiliteRempotage(str(item, "sensibilite_rempotage"));
+        r.materiaux           = tableauEnum<TypePot> (item, "materiaux", EnumInfo::parseTypePot);
+        r.plantesExemples     = tableau(item, "plantes_exemples");
 
         if (item.contains("volume_litres") && item["volume_litres"].is_object()) {
-            p.volumeMin = entier(item["volume_litres"], "min");
-            p.volumeMax = entier(item["volume_litres"], "max");
+            r.volumeMin = entier(item["volume_litres"], "min");
+            r.volumeMax = entier(item["volume_litres"], "max");
         }
 
-        out.push_back(std::move(p));
+        out.push_back(std::move(r));
     }
 
     std::cout << "[DataLoader] " << out.size() << " pots chargés depuis " << chemin << "\n";
@@ -250,7 +344,7 @@ bool DataLoader::chargerBoutures(const std::string& chemin, std::vector<Bouture>
 
         b.periode = tableauEnum<Saison>(item, "periode", EnumInfo::parseSaison);
         b.plantesConcernees = tableau(item, "plantes_concernees");
-        b.etapes            = tableau(item, "etapes");
+        b.etapes            = tableauEnum<EtapeBouture>(item, "etapes", EnumInfo::parseEtape);
 
         if (item.contains("longueur_coupe_cm") && item["longueur_coupe_cm"].is_object()) {
             b.longueurMin = entier(item["longueur_coupe_cm"], "min", -1);

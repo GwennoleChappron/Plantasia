@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
+#include "EnumInfo.hpp"
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  STRUCT SOL
@@ -17,7 +19,7 @@ struct Soil {
     float phMin = 0.f;
     float phMax = 0.f;
 
-    std::vector<CompositionSol> composition;
+    std::unordered_map<CompositionSol, float> composition;
     std::string utilisation;
     std::vector<std::string> adaptePour;   // noms de plantes
     std::vector<risquesSol> risques;

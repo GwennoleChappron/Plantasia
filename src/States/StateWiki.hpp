@@ -59,14 +59,4 @@ private:
     void DrawPlantCalendar   (const Plant& plant) const;
     void DrawPlantRelations  (const Plant& plant);   // non-const : peut changer m_selectedSoil
 
-    // -- Widget partagé : ligne label + valeur colorée --
-    static void DrawInfoRow(const char* label, const char* value,
-                            const ImVec4& valueColor = {0.88f, 0.92f, 0.88f, 1.f});
-
-    // -- Widget partagé : tag badge coloré --
-    static void DrawTag(const char* text, const ImVec4& color);
-
-    // -- Widget partagé : barre de progression (besoin en eau, score…) --
-    static void DrawGauge(const char* label, float value, float maxValue,
-                          const ImVec4& color);
 };

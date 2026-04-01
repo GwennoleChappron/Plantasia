@@ -2,7 +2,14 @@
 #include <algorithm>
 #include <cmath>
 
+#include "UI/ColorTheme.hpp"
+#include "UI/Widgets.hpp"
+#include "Data/EnumInfo.hpp"
+#include "Services/DatabaseManager.hpp"
+#include "Core/Application.hpp"
+
 namespace {
+    // ── SHADER ──
     const std::string catalogueOutlineShaderCode = R"(
     uniform sampler2D texture;
     uniform vec2 texSize;
@@ -24,86 +31,24 @@ namespace {
         }
     }
     )";
-}
 
-// --- HELPERS LOCAUX ---
-namespace {
-    const float PI = 3.1415926535f;
-    const char* RusiciteLabel(Rusticite r) {
-        switch (r) {
-            case Rusticite::RUSTIQUE:      return "Rustique";
-            case Rusticite::SEMI_RUSTIQUE: return "Semi-rustique";
-            case Rusticite::FRAGILE:       return "Fragile";
-            case Rusticite::GELIVE:        return "Gélive";
-            case Rusticite::TROPICALE:     return "Tropicale";
-        }
-        return "?";
-    }
-
-    ImVec4 CouleurRusticite(Rusticite r) {
-        switch (r) {
-            case Rusticite::RUSTIQUE:      return ImVec4(0.30f, 0.80f, 0.45f, 1.0f);
-            case Rusticite::SEMI_RUSTIQUE: return ImVec4(0.60f, 0.80f, 0.30f, 1.0f);
-            case Rusticite::FRAGILE:       return ImVec4(0.90f, 0.70f, 0.20f, 1.0f);
-            case Rusticite::GELIVE:        return ImVec4(0.50f, 0.80f, 0.95f, 1.0f);
-            case Rusticite::TROPICALE:     return ImVec4(0.95f, 0.55f, 0.25f, 1.0f);
-        }
-        return ImVec4(0.88f, 0.92f, 0.88f, 1.00f);
-    }
-
+    // ── HELPERS LOCAUX RESTANTS ──
+    // On conserve uniquement ce qui n'est pas (encore) dans EnumInfo.hpp
     ImVec4 CouleurTypePlante(TypePlante t) {
         switch (t) {
-            case TypePlante::AROMATIQUE: return ImVec4(0.4f, 0.8f, 0.5f, 1.0f); 
-            case TypePlante::FRUITIER:   return ImVec4(1.0f, 0.6f, 0.2f, 1.0f); 
-            case TypePlante::FLEUR:      return ImVec4(1.0f, 0.5f, 0.7f, 1.0f); 
-            case TypePlante::LEGUME:     return ImVec4(0.3f, 0.7f, 1.0f, 1.0f); 
+            case TypePlante::AROMATIQUE: return Theme::PlantGreen; 
+            case TypePlante::FRUITIER:   return Theme::WarningOrange; 
+            case TypePlante::FLEUR:      return Theme::Floraison; 
+            case TypePlante::LEGUME:     return Theme::InfoBlue; 
         }
-        return ImVec4(0.55f, 0.68f, 0.55f, 1.00f);
-    }
-
-    void DrawJaugeCirculaire(const char* label, float valeur, float valeur_max, ImVec2 centre, float rayon, ImU32 couleurJauge, ImU32 couleurFond) {
-        ImDrawList* dl = ImGui::GetWindowDrawList();
-        float epaisseur = 6.0f;
-        dl->AddCircle(centre, rayon, couleurFond, 32, epaisseur);
-        float fraction = std::clamp(valeur / valeur_max, 0.0f, 1.0f);
-        if (fraction > 0.01f) {
-            float angle_min = -PI / 2.0f; 
-            float angle_max = angle_min + (fraction * PI * 2.0f);
-            dl->PathClear();
-            dl->PathArcTo(centre, rayon, angle_min, angle_max, 32);
-            dl->PathStroke(couleurJauge, 0, epaisseur);
-        }
-        char buf[16];
-        snprintf(buf, sizeof(buf), "%.0f", valeur);
-        ImVec2 tSize = ImGui::CalcTextSize(buf);
-        dl->AddText(ImVec2(centre.x - tSize.x * 0.5f, centre.y - tSize.y * 0.5f), IM_COL32(255, 255, 255, 255), buf);
-        ImVec2 lSize = ImGui::CalcTextSize(label);
-        dl->AddText(ImVec2(centre.x - lSize.x * 0.5f, centre.y + rayon + 8.0f), IM_COL32(180, 200, 180, 255), label);
-    }
-
-    const char* SoleilLabel(ExpositionSoleil e) {
-        switch(e) {
-            case ExpositionSoleil::PLEIN_SOLEIL: return "Plein Soleil";
-            case ExpositionSoleil::MI_OMBRE: return "Mi-Ombre";
-            case ExpositionSoleil::OMBRE_CLAIRE: return "Ombre Claire";
-            case ExpositionSoleil::OMBRE_DENSE: return "Ombre Dense";
-        }
-        return "?";
-    }
-
-    const char* VentLabel(ExpositionVent v) {
-        switch(v) {
-            case ExpositionVent::ABRITE: return "Abrite (Sensible au vent)";
-            case ExpositionVent::MODERE: return "Modere";
-            case ExpositionVent::COULOIR_DE_VENT: return "Couloir de vent";
-        }
-        return "?";
+        return Theme::TextSecondary;
     }
 }
 
-// ---------------------------------------------------------
-// LE CONSTRUCTEUR MANQUANT ÉTAIT ICI :
-// ---------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+//  CYCLE DE VIE
+// ─────────────────────────────────────────────────────────────────────────────
+
 StateCatalogue::StateCatalogue(Application* app) : State(app) {}
 
 void StateCatalogue::onEnter() {
@@ -143,8 +88,12 @@ void StateCatalogue::update(float dt) {
 
 void StateCatalogue::draw(sf::RenderWindow& window) {}
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CALENDRIER VISUEL (Refactorisé avec ColorTheme)
+// ─────────────────────────────────────────────────────────────────────────────
+
 void StateCatalogue::DessinerCalendrierVisuel(const char* label, int debut, int fin, ImVec4 col) {
-    ImGui::TextColored(ImVec4(0.55f, 0.68f, 0.55f, 1.00f), "%s", label);
+    ImGui::TextColored(Theme::TextSecondary, "%s", label);
     ImVec2 p = ImGui::GetCursorScreenPos();
     float w = ImGui::GetContentRegionAvail().x;
     float step = w / 12.f;
@@ -160,14 +109,22 @@ void StateCatalogue::DessinerCalendrierVisuel(const char* label, int debut, int 
         }
         ImVec2 pmin(p.x + i * step + 2, p.y);
         ImVec2 pmax(p.x + (i + 1) * step - 2, p.y + 20); 
-        dl->AddRectFilled(pmin, pmax, on ? ImGui::ColorConvertFloat4ToU32(col) : IM_COL32(35,45,35,255), 4.f);
+        
+        // Utilisation de GaugeInactif pour les cellules éteintes
+        ImU32 cellColor = on ? ImGui::ColorConvertFloat4ToU32(col) : ImGui::ColorConvertFloat4ToU32(Theme::GaugeInactif);
+        dl->AddRectFilled(pmin, pmax, cellColor, 4.f);
+        
         if (on) {
             ImVec2 tsz = ImGui::CalcTextSize(initMois[i]);
             dl->AddText(ImVec2(pmin.x + (step - 4 - tsz.x) * 0.5f, pmin.y + 3), IM_COL32(10,20,10,255), initMois[i]);
         }
     }
-    ImGui::Dummy(ImVec2(0, 26)); 
+    UI::Gap(26.f); 
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  INTERFACE PRINCIPALE IMGUI
+// ─────────────────────────────────────────────────────────────────────────────
 
 void StateCatalogue::drawImGui() {
     float W = (float)m_app->getWindow().getSize().x;
@@ -179,14 +136,11 @@ void StateCatalogue::drawImGui() {
     ImGui::SetNextWindowSize({W - MARGE*2, H - MARGE*2});
     ImGui::Begin("##principal", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-    if (ImGui::Button("< Retour", ImVec2(80, 0))) {
-        m_app->getStateMachine().removeState(); 
-    }
+    // ── TOP BAR ──
+    UI::NavButtonPrimary("< Retour", [&](){ m_app->getStateMachine().removeState(); });
     ImGui::SameLine(0, 20.f);
-    ImGui::TextColored(ImVec4(0.20f, 0.75f, 0.40f, 1.00f), "PLANTASIA");
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.55f, 0.68f, 0.55f, 1.00f), "- Mon Balcon");
-    ImGui::Dummy({0,6});
+    UI::LabelAccent("PLANTASIA", "- Mon Balcon", Theme::TextSecondary);
+    UI::Gap(6.f);
 
     float hauteurContenu = ImGui::GetContentRegionAvail().y;
     float largeurDetail  = ImGui::GetContentRegionAvail().x - LARGEUR_LISTE - 16.f;
@@ -196,7 +150,7 @@ void StateCatalogue::drawImGui() {
     
     ImGui::SetNextItemWidth(-1.f);
     ImGui::InputTextWithHint("##rech", "Rechercher...", m_filtreRecherche, sizeof(m_filtreRecherche));
-    ImGui::Spacing();
+    UI::Gap();
 
     const auto& mesPlantes = m_app->getUserBalcony().getMesPlantes();
     std::string filtre(m_filtreRecherche);
@@ -224,19 +178,24 @@ void StateCatalogue::drawImGui() {
 
         ImDrawList* dlL = ImGui::GetWindowDrawList();
         
-        if (sel)       dlL->AddRectFilled(pos0, {pos0.x+sz.x, pos0.y+sz.y}, IM_COL32(25,60,35,255), 8.f);
-        else if (hov)  dlL->AddRectFilled(pos0, {pos0.x+sz.x, pos0.y+sz.y}, IM_COL32(20,40,25,200), 8.f);
-        else           dlL->AddRectFilled(pos0, {pos0.x+sz.x, pos0.y+sz.y}, IM_COL32(15,22,15,150), 8.f);
+        // Fonds thémés
+        ImU32 bgCol = ImGui::ColorConvertFloat4ToU32(
+            sel ? Theme::darken(Theme::PlantDark, 0.8f) : 
+           (hov ? Theme::SurfaceHaute : Theme::Surface)
+        );
+        dlL->AddRectFilled(pos0, {pos0.x+sz.x, pos0.y+sz.y}, bgCol, 8.f);
         
+        // Bandeau couleur type
         ImVec4 colType = CouleurTypePlante(refP->type);
         dlL->AddRectFilled(pos0, {pos0.x + 6.f, pos0.y+sz.y}, ImGui::ColorConvertFloat4ToU32(colType), 8.f, ImDrawFlags_RoundCornersLeft);
 
-        ImVec4 cNom = sel ? ImVec4(0.20f, 0.75f, 0.40f, 1.00f) : (hov ? ImVec4(0.88f, 0.92f, 0.88f, 1.00f) : ImVec4(0.85f,0.90f,0.85f,1.f));
+        ImVec4 cNom = sel ? Theme::PlantGreen : (hov ? Theme::TextPrimary : Theme::TextSecondary);
         ImGui::SetCursorScreenPos({pos0.x+18, pos0.y+10});
         ImGui::TextColored(cNom, "%s", up.surnom.c_str());
         
+        // Utilisation d'EnumInfo pour la rusticité
         ImGui::SetCursorScreenPos({pos0.x+18, pos0.y+32});
-        ImGui::TextColored(CouleurRusticite(refP->rusticite), "- %s", RusiciteLabel(refP->rusticite));
+        ImGui::TextColored(EnumInfo::get(refP->rusticite).color, "- %s", EnumInfo::label(refP->rusticite));
 
         ImGui::SetCursorScreenPos({pos0.x, pos0.y+sz.y + 4.f});
         ImGui::PopID();
@@ -276,10 +235,11 @@ void StateCatalogue::drawImGui() {
                 sf::Uint8 bT = (sf::Uint8)(180 * healthT);
 
                 dl->AddImage(bgID, bgMin, bgMax, ImVec2(0,0), ImVec2(1,1), IM_COL32(rT, gT, bT, 35)); 
-                dl->AddRectFilledMultiColor(bgMin, bgMax, IM_COL32(7,10,7,0), IM_COL32(7,10,7,0), IM_COL32(7,10,7,230), IM_COL32(7,10,7,230));
+                ImU32 fadeColor = ImGui::ColorConvertFloat4ToU32(Theme::withAlpha(Theme::Fond, 0.9f));
+                dl->AddRectFilledMultiColor(bgMin, bgMax, IM_COL32(7,10,7,0), IM_COL32(7,10,7,0), fadeColor, fadeColor);
             }
 
-            // ═══ ICÔNE PNG à droite du titre ═══
+            // ═══ ICÔNE PNG ANIMÉE ═══
             float iconSize = 90.f;
             float iconX    = panelPos.x + panelW - iconSize - 8.f;
             float iconY    = panelPos.y + 8.f;
@@ -326,26 +286,25 @@ void StateCatalogue::drawImGui() {
 
             // ═══ TITRE ET INFOS SCIENTIFIQUES ═══
             ImGui::SetWindowFontScale(1.4f);
-            ImGui::TextColored({0.20f,0.75f,0.40f,1.f}, "%s", up.surnom.c_str());
+            ImGui::TextColored(Theme::PlantGreen, "%s", up.surnom.c_str());
             ImGui::SetWindowFontScale(1.0f);
 
-            ImGui::TextColored(ImVec4(0.55f, 0.68f, 0.55f, 1.00f), "Espece : %s", refP->nom.c_str());
+            ImGui::TextColored(Theme::TextSecondary, "Espèce : %s", refP->nom.c_str());
             if (!refP->nom_scientifique.empty()) {
                 ImGui::TextDisabled("( %s ) - Famille : %s", refP->nom_scientifique.c_str(), refP->famille.c_str());
             }
             
-            // Affichage des autres noms s'ils existent
             if (!refP->autres_noms.empty()) {
-                std::string alias = "Aussi appele : ";
+                std::string alias = "Aussi appelé : ";
                 for (size_t k = 0; k < refP->autres_noms.size(); ++k) {
                     alias += refP->autres_noms[k] + (k < refP->autres_noms.size() - 1 ? ", " : "");
                 }
-                ImGui::TextColored(ImVec4(0.4f, 0.6f, 0.4f, 0.8f), "%s", alias.c_str());
+                ImGui::TextColored(Theme::TextMuted, "%s", alias.c_str());
             }
             
-            // --- EDITEUR DE DATE D'ADOPTION ---
-            ImGui::Spacing();
-            ImGui::TextColored(ImVec4(0.88f, 0.92f, 0.88f, 1.00f), "Date d'adoption :");
+            // --- ÉDITEUR DE DATE D'ADOPTION ---
+            UI::Gap();
+            ImGui::TextColored(Theme::TextPrimary, "Date d'adoption :");
             ImGui::SameLine();
             
             ImGui::PushItemWidth(60);
@@ -359,7 +318,7 @@ void StateCatalogue::drawImGui() {
 
             ImGui::SameLine(0, 20);
             ImGui::PushItemWidth(100);
-            ImGui::TextColored(ImVec4(0.88f, 0.92f, 0.88f, 1.00f), "Pot (Litres) :");
+            ImGui::TextColored(Theme::TextPrimary, "Pot (Litres) :");
             ImGui::SameLine();
             if (ImGui::DragInt("##pot", &editablePlant.volume_pot_actuel_L, 0.5f, 1, 500)) dateChanged = true;
             ImGui::PopItemWidth();
@@ -369,129 +328,128 @@ void StateCatalogue::drawImGui() {
             }
 
             ImGui::Separator();
-            ImGui::Spacing();
+            UI::Gap();
 
             if (refP->floraison_debut > 0 || refP->recolte_debut > 0) {
                 if (refP->floraison_debut > 0) 
-                    DessinerCalendrierVisuel("Periode de Floraison", refP->floraison_debut, refP->floraison_fin, ImVec4(0.9f, 0.5f, 0.8f, 1.0f));
+                    DessinerCalendrierVisuel("Période de Floraison", refP->floraison_debut, refP->floraison_fin, Theme::Floraison);
                 if (refP->recolte_debut > 0) 
-                    DessinerCalendrierVisuel("Periode de Recolte", refP->recolte_debut, refP->recolte_fin, ImVec4(0.5f, 0.8f, 0.4f, 1.0f));
+                    DessinerCalendrierVisuel("Période de Récolte", refP->recolte_debut, refP->recolte_fin, Theme::PlantGreen);
             }
 
-            // ═══ ONGLETS D'INFORMATIONS COMPLETS ═══
+            // ═══ ONGLETS D'INFORMATIONS ═══
             if (ImGui::BeginTabBar("OngletsConseils")) {
-                auto SectionInfo = [&](const char* titre, const char* contenu, ImVec4 color) {
-                    if (!contenu || std::strlen(contenu) == 0) return;
-                    ImGui::TextColored(color, "[ %s ]", titre);
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.55f, 0.68f, 0.55f, 1.00f));
-                    ImGui::TextWrapped("%s", contenu);
-                    ImGui::PopStyleColor();
-                    ImGui::Dummy({0,8});
-                };
 
-                // ONGLET 1 : BOTANIQUE
                 if (ImGui::BeginTabItem("Botanique")) {
-                    ImGui::Spacing();
-                    SectionInfo("Origine", refP->origine.c_str(), ImVec4(0.9f, 0.7f, 0.4f, 1.f));
-                    SectionInfo("Dimensions Adulte", refP->dimensions_adulte.c_str(), ImVec4(0.7f, 0.9f, 0.7f, 1.f));
-                    SectionInfo("Feuillage", refP->feuillage.c_str(), ImVec4(0.4f, 0.8f, 0.4f, 1.f));
-                    SectionInfo("Description", refP->notes.c_str(), ImVec4(0.88f, 0.92f, 0.88f, 1.f));
+                    UI::InfoCardRaw("##bot", 0.f, [&]() {
+                        UI::InfoRow("Origine", refP->origine);
+                        UI::InfoRow("Dimensions Adulte", refP->dimensions_adulte);
+                        UI::InfoRow("Feuillage", refP->feuillage);
+                    });
+                    if (!refP->notes.empty()) {
+                        UI::Section("Description");
+                        UI::BodyText(refP->notes.c_str());
+                    }
                     ImGui::EndTabItem();
                 }
 
-                // ONGLET 2 : CULTURE & EAU
                 if (ImGui::BeginTabItem("Culture & Eau")) {
-                    ImGui::Spacing();
+                    UI::InfoCardRaw("##cult", 0.f, [&]() {
+                        UI::InfoRow("Exposition", EnumInfo::label(refP->exposition_soleil), EnumInfo::get(refP->exposition_soleil).color);
+                        UI::InfoRow("Vent", EnumInfo::label(refP->exposition_vent), EnumInfo::get(refP->exposition_vent).color);
+                        UI::InfoRow("Zone Climat", refP->zone_climat);
+                        UI::InfoRow("Volume du pot min.", refP->volume_pot_min);
+                        UI::InfoRow("Substrat recommandé", refP->sol_recommande, Theme::WarningOrange);
+                    });
                     
-                    ImGui::Columns(2, "cols_expo", false);
-                    SectionInfo("Exposition", SoleilLabel(refP->exposition_soleil), ImVec4(0.9f, 0.8f, 0.2f, 1.f));
-                    ImGui::NextColumn();
-                    SectionInfo("Vent", VentLabel(refP->exposition_vent), ImVec4(0.6f, 0.8f, 0.9f, 1.f));
-                    ImGui::Columns(1);
-                    
-                    SectionInfo("Zone Climat", refP->zone_climat.c_str(), CouleurRusticite(refP->rusticite));
-                    SectionInfo("Volume du pot min.", refP->volume_pot_min.c_str(), ImVec4(0.8f, 0.8f, 0.8f, 1.f));
-                    SectionInfo("Substrat recommande", refP->sol_recommande.c_str(), ImVec4(0.8f, 0.6f, 0.3f, 1.f));
-                    
-                    ImGui::Separator(); ImGui::Dummy({0,4});
-                    
-                    SectionInfo("Conseil Arrosage", refP->conseil_arrosage.c_str(), ImVec4(0.55f, 0.68f, 0.55f, 1.00f));
-                    ImGui::Columns(2, "cols_arrosage", false);
-                    SectionInfo("Frequence Ete", refP->frequence_arrosage_ete.c_str(), ImVec4(0.9f, 0.6f, 0.3f, 1.f));
-                    ImGui::NextColumn();
-                    SectionInfo("Frequence Hiver", refP->frequence_arrosage_hiver.c_str(), ImVec4(0.4f, 0.7f, 0.9f, 1.f));
-                    ImGui::Columns(1);
-                    
+                    UI::InfoCardRaw("##eau", 0.f, [&]() {
+                        UI::InfoRow("Fréquence Été", refP->frequence_arrosage_ete, Theme::Amber);
+                        UI::InfoRow("Fréquence Hiver", refP->frequence_arrosage_hiver, Theme::InfoBlue);
+                    });
+
+                    if (!refP->conseil_arrosage.empty()) {
+                        UI::Section("Conseil Arrosage");
+                        UI::BodyText(refP->conseil_arrosage.c_str());
+                    }
                     ImGui::EndTabItem();
                 }
 
-                // ONGLET 3 : ENTRETIEN & SANTE
-                if (ImGui::BeginTabItem("Entretien & Sante")) {
-                    ImGui::Spacing();
-                    SectionInfo("Taille & Soins", refP->conseil_entretien.c_str(), ImVec4(0.5f, 0.8f, 0.5f, 1.f));
-                    SectionInfo("Type racinaire (Pot)", refP->type_racinaire_pot.c_str(), ImVec4(0.6f, 0.5f, 0.8f, 1.f));
-                    SectionInfo("Compagnonnage", refP->compagnonnage.c_str(), ImVec4(0.4f, 0.9f, 0.6f, 1.f));
+                if (ImGui::BeginTabItem("Entretien & Santé")) {
+                    UI::InfoCardRaw("##entr", 0.f, [&]() {
+                        UI::InfoRow("Type racinaire", refP->type_racinaire_pot);
+                        UI::InfoRow("Compagnonnage", refP->compagnonnage);
+                    });
+
+                    if (!refP->conseil_entretien.empty()) {
+                        UI::Section("Taille & Soins");
+                        UI::BodyText(refP->conseil_entretien.c_str());
+                    }
                     
                     if (!refP->maladies.empty()) {
-                        ImGui::Separator(); ImGui::Dummy({0,4});
-                        SectionInfo("Maladies & Parasites", refP->maladies.c_str(), ImVec4(0.9f, 0.4f, 0.4f, 1.f));
+                        UI::Section("Maladies & Parasites");
+                        UI::BodyText(refP->maladies.c_str(), Theme::DangerRed);
                     }
                     ImGui::EndTabItem();
                 }
 
-                // ONGLET 4 : USAGES & PRÉCAUTIONS
                 if (ImGui::BeginTabItem("Usages")) {
-                    ImGui::Spacing();
-                    if (!refP->vertus_medicinales.empty()) 
-                        SectionInfo("Vertus & Usages", refP->vertus_medicinales.c_str(), ImVec4(0.3f, 0.8f, 0.9f, 1.f));
+                    UI::InfoCardRaw("##usa", 0.f, [&]() {
+                        if (refP->toxicite_animaux == "NON") {
+                            UI::InfoRow("Toxicité Animaux", "Sans danger (Pet-friendly)", Theme::PlantGreen);
+                        } else if (!refP->toxicite_animaux.empty()) {
+                            UI::InfoRow("Toxicité Animaux", refP->toxicite_animaux, Theme::DangerRed);
+                        }
+                    });
+
+                    if (!refP->vertus_medicinales.empty()) {
+                        UI::Section("Vertus & Usages");
+                        UI::BodyText(refP->vertus_medicinales.c_str());
+                    }
                     
-                    if (!refP->precautions.empty()) 
-                        SectionInfo("Precautions", refP->precautions.c_str(), ImVec4(0.9f, 0.5f, 0.3f, 1.f));
-                        
-                    if (refP->toxicite_animaux == "NON") {
-                        SectionInfo("Toxicite Animaux", "Sans danger (Pet-friendly)", ImVec4(0.4f, 0.9f, 0.5f, 1.f));
-                    } else if (!refP->toxicite_animaux.empty()) {
-                        SectionInfo("Toxicite Animaux", refP->toxicite_animaux.c_str(), ImVec4(0.9f, 0.3f, 0.3f, 1.f));
+                    if (!refP->precautions.empty()) {
+                        UI::Section("Précautions");
+                        UI::BodyText(refP->precautions.c_str(), Theme::WarningOrange);
                     }
                     ImGui::EndTabItem();
                 }
 
-                // ONGLET 5 : STATISTIQUES (Avec les jauges circulaires !)
+                // ONGLET 5 : STATISTIQUES (Remplacé par UI::Gauge)
                 if (ImGui::BeginTabItem("Statistiques")) {
-                    ImGui::Spacing();
-                    ImGui::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.f), "Profil de culture");
-                    ImGui::Dummy(ImVec2(0, 20.f)); 
+                    UI::Gap();
+                    UI::InfoCard("Profil de culture", "##stats", 0.f, [&]() {
+                        // Jauge Besoin Eau (Segmentée 0-5)
+                        const auto& eau = EnumInfo::getBesoinEau(refP->besoin_eau);
+                        ImGui::TextColored(Theme::TextMuted, "Besoin en eau :");
+                        ImGui::SameLine(UI::ColLabel);
+                        UI::GaugeSegmented(refP->besoin_eau, 5, { eau.color.x, eau.color.y, eau.color.z, 1.f });
+                        ImGui::SameLine();
+                        ImGui::TextColored({ eau.color.x, eau.color.y, eau.color.z, 1.f }, "%s", eau.label);
+                        UI::Gap(4.f);
 
-                    ImVec2 posCursor = ImGui::GetCursorScreenPos();
-                    float rayon = 25.0f;
-                    float ecart = 90.0f; 
+                        // Jauge Difficulté (Segmentée 1-3)
+                        const auto& diff = EnumInfo::get(refP->niveau_difficulte);
+                        int diffInt = (refP->niveau_difficulte == NiveauDifficulte::FACILE) ? 1 :
+                                      (refP->niveau_difficulte == NiveauDifficulte::MOYEN) ? 2 : 3;
+                        ImGui::TextColored(Theme::TextMuted, "Difficulté :");
+                        ImGui::SameLine(UI::ColLabel);
+                        UI::GaugeSegmented(diffInt, 3, diff.color);
+                        ImGui::SameLine();
+                        ImGui::TextColored(diff.color, "%s", diff.label.c_str());
+                        UI::Gap(4.f);
 
-                    DrawJaugeCirculaire("Eau", (float)refP->besoin_eau, 4.0f, 
-                        ImVec2(posCursor.x + 40.f, posCursor.y + 30.f), rayon, 
-                        IM_COL32(80, 180, 255, 255), IM_COL32(30, 60, 80, 255));
-
-                    float diffVal = (refP->niveau_difficulte == NiveauDifficulte::FACILE) ? 1.f :
-                                    (refP->niveau_difficulte == NiveauDifficulte::MOYEN) ? 2.f :
-                                    (refP->niveau_difficulte == NiveauDifficulte::DIFFICILE) ? 3.f : 4.f;
-                    
-                    ImU32 colDiff = (diffVal <= 1.f) ? IM_COL32(100, 255, 100, 255) : 
-                                    (diffVal <= 2.f) ? IM_COL32(255, 200, 50, 255) : IM_COL32(255, 80, 50, 255);
-                    
-                    DrawJaugeCirculaire("Difficulte", diffVal, 4.0f, 
-                        ImVec2(posCursor.x + 40.f + ecart, posCursor.y + 30.f), rayon, 
-                        colDiff, IM_COL32(60, 50, 40, 255));
-
-                    DrawJaugeCirculaire("Score", (float)refP->score_balcon, 100.0f, 
-                        ImVec2(posCursor.x + 40.f + ecart * 2, posCursor.y + 30.f), rayon, 
-                        IM_COL32(255, 215, 0, 255), IM_COL32(80, 70, 20, 255));
-
-                    ImGui::Dummy(ImVec2(0, 80.f)); 
+                        // Jauge Score Balcon (Continue 0-100)
+                        ImGui::TextColored(Theme::TextMuted, "Score Balcon :");
+                        ImGui::SameLine(UI::ColLabel);
+                        char scoreStr[16];
+                        std::snprintf(scoreStr, sizeof(scoreStr), "%d / 100", refP->score_balcon);
+                        UI::Gauge(refP->score_balcon, 100, Theme::Amber, nullptr, scoreStr);
+                    });
 
                     if (refP->contrainte_majeure != "Aucune" && !refP->contrainte_majeure.empty()) {
-                        ImGui::Separator();
-                        ImGui::Spacing();
-                        ImGui::TextColored(ImVec4(0.9f, 0.4f, 0.4f, 1.f), "[ Attention ]");
-                        ImGui::TextWrapped("%s", refP->contrainte_majeure.c_str());
+                        UI::Gap();
+                        UI::InfoCardRaw("##alerte", 0.f, [&]() {
+                            UI::LabelAccent("Attention :", refP->contrainte_majeure.c_str(), Theme::DangerRed);
+                        }, Theme::withAlpha(Theme::DangerRed, 0.1f), Theme::DangerRed);
                     }
                     ImGui::EndTabItem();
                 }
@@ -580,7 +538,8 @@ void StateCatalogue::drawImGui() {
                 std::string label = p.surnom;
                 ImVec2 textSz = ImGui::CalcTextSize(label.c_str());
                 float scaledWidth = tex.getSize().x * PLANT_SCALE;
-                dl->AddText({pMin.x + (scaledWidth - textSz.x)*0.5f, pMax.y + 5.f}, IM_COL32(200, 220, 200, 255), label.c_str());
+                dl->AddText({pMin.x + (scaledWidth - textSz.x)*0.5f, pMax.y + 5.f}, 
+                            ImGui::ColorConvertFloat4ToU32(Theme::TextPrimary), label.c_str());
             }
         }
     }

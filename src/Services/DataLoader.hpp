@@ -1,9 +1,9 @@
 #pragma once
 #include <vector>
 #include <string>
-#include "Domain/Plant.hpp"
-#include "Domain/Soil.hpp"
-#include "Domain/PotBouture.hpp"
+#include "Data/Plante.hpp"
+#include "Data/Soil.hpp"
+#include "Data/RacineBouture.hpp"
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DataLoader
@@ -27,7 +27,7 @@ namespace DataLoader {
 
 bool chargerPlantes (const std::string& chemin, std::vector<Plant>&   out);
 bool chargerSols    (const std::string& chemin, std::vector<Soil>&    out);
-bool chargerPots    (const std::string& chemin, std::vector<Pot>&     out);
+bool chargerRacines    (const std::string& chemin, std::vector<Racine>&     out);
 bool chargerBoutures(const std::string& chemin, std::vector<Bouture>& out);
 
 }

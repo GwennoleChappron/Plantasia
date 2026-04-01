@@ -2,12 +2,15 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 #include "States/StateMainMenu.hpp"
+#include "UI/ColorTheme.hpp" // Ta nouvelle source unique de vérité
 
 Application::Application() {
     m_window.create(sf::VideoMode(1100, 720), "Plantasia - Mon Jardin");
     m_window.setFramerateLimit(60);
     (void)ImGui::SFML::Init(m_window);
+    
     initStyleImGui();
+    
     m_database.chargerTout();
     m_userBalcony.chargerProfil("mon_balcon.json");
     m_background = std::make_unique<BackgroundEngine>(1100.0f, 720.0f);
@@ -30,7 +33,7 @@ void Application::run() {
 
         sf::Time     dt       = m_clock.restart();
         sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
-       m_background->update(dt.asSeconds(), mousePos,
+        m_background->update(dt.asSeconds(), mousePos,
                              (float)m_window.getSize().x, (float)m_window.getSize().y);
         ImGui::SFML::Update(m_window, dt);
 
@@ -55,28 +58,12 @@ void Application::run() {
 }
 
 // ─────────────────────────────────────────────
-//  PALETTE
-// ─────────────────────────────────────────────
-namespace Couleurs {
-    const ImVec4 Fond          = ImVec4(0.04f, 0.06f, 0.04f, 1.00f);
-    const ImVec4 Surface       = ImVec4(0.07f, 0.10f, 0.07f, 0.90f);
-    const ImVec4 SurfaceHaute  = ImVec4(0.11f, 0.15f, 0.11f, 0.95f);
-    const ImVec4 Bordure       = ImVec4(0.18f, 0.28f, 0.18f, 1.00f);
-    const ImVec4 Accent        = ImVec4(0.20f, 0.75f, 0.40f, 1.00f);
-    const ImVec4 AccentDoux    = ImVec4(0.15f, 0.55f, 0.30f, 1.00f);
-    const ImVec4 AccentSombre  = ImVec4(0.10f, 0.35f, 0.18f, 1.00f);
-    const ImVec4 Texte         = ImVec4(0.88f, 0.92f, 0.88f, 1.00f);
-    const ImVec4 TexteDoux     = ImVec4(0.55f, 0.68f, 0.55f, 1.00f);
-    const ImVec4 TexteInactif  = ImVec4(0.30f, 0.40f, 0.30f, 1.00f);
-    const ImVec4 Danger        = ImVec4(0.75f, 0.22f, 0.22f, 1.00f);
-    const ImVec4 DangerHover   = ImVec4(0.90f, 0.30f, 0.30f, 1.00f);
-}
-
-// ─────────────────────────────────────────────
 //  STYLE IMGUI
 // ─────────────────────────────────────────────
 void Application::initStyleImGui() {
     ImGuiStyle& s = ImGui::GetStyle();
+    
+    // 1. Configuration de la géométrie et des espacements
     s.WindowRounding   = 12.0f;
     s.FrameRounding    = 8.0f;
     s.PopupRounding    = 10.0f;
@@ -86,21 +73,6 @@ void Application::initStyleImGui() {
     s.FramePadding     = ImVec2(12.0f,  8.0f);
     s.WindowPadding    = ImVec2(18.0f, 16.0f);
 
-    ImVec4* c = s.Colors;
-    c[ImGuiCol_WindowBg]           = Couleurs::Surface;
-    c[ImGuiCol_ChildBg]            = ImVec4(0.04f, 0.06f, 0.04f, 0.70f);
-    c[ImGuiCol_Border]             = Couleurs::Bordure;
-    c[ImGuiCol_FrameBg]            = Couleurs::SurfaceHaute;
-    c[ImGuiCol_FrameBgHovered]     = ImVec4(0.15f, 0.22f, 0.15f, 1.0f);
-    c[ImGuiCol_FrameBgActive]      = ImVec4(0.18f, 0.28f, 0.18f, 1.0f);
-    c[ImGuiCol_Button]             = Couleurs::AccentSombre;
-    c[ImGuiCol_ButtonHovered]      = Couleurs::AccentDoux;
-    c[ImGuiCol_ButtonActive]       = Couleurs::Accent;
-    c[ImGuiCol_Text]               = Couleurs::Texte;
-    c[ImGuiCol_TextDisabled]       = Couleurs::TexteInactif;
-    c[ImGuiCol_Tab]                = Couleurs::SurfaceHaute;
-    c[ImGuiCol_TabHovered]         = Couleurs::AccentDoux;
-    c[ImGuiCol_TabActive]          = Couleurs::AccentSombre;
-    c[ImGuiCol_TabUnfocused]       = Couleurs::Surface;
-    c[ImGuiCol_TabUnfocusedActive] = Couleurs::SurfaceHaute;
+    // 2. Application de la palette de couleurs centralisée
+    Theme::applyToImGui(s);
 }

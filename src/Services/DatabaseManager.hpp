@@ -4,7 +4,7 @@
 #include <algorithm>
 #include "Data/Plante.hpp"
 #include "Data/Soil.hpp"
-#include "Data/PotBouture.hpp"
+#include "Data/RacineBouture.hpp"
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DatabaseManager
@@ -27,24 +27,24 @@ public:
     bool chargerTout(
         const std::string& cheminPlantes  = "assets/JSON/encyclopedia.json",
         const std::string& cheminSols     = "assets/JSON/sols.json",
-        const std::string& cheminPots     = "assets/JSON/pots.json",
+        const std::string& cheminRacines     = "assets/JSON/racines.json",
         const std::string& cheminBoutures = "assets/JSON/boutures.json"
     );
 
     // ── Accès en lecture (const) ──────────────────────────────────────────
 
-    const std::vector<Plant>&   getPlantes()  const { return m_plantes; }
-    const std::vector<Soil>&    getSols()     const { return m_sols; }
-    const std::vector<Pot>&     getPots()     const { return m_pots; }
-    const std::vector<Bouture>& getBoutures() const { return m_boutures; }
+    const std::vector<Plant>&       getPlantes()    const { return m_plantes;   }
+    const std::vector<Soil>&        getSols()       const { return m_sols;      }
+    const std::vector<Racine>&      getRacines()    const { return m_racines;   }
+    const std::vector<Bouture>&     getBoutures()   const { return m_boutures;  }
 
     // ── Recherche par clé ─────────────────────────────────────────────────
 
     // Retourne nullptr si non trouvé.
-    const Plant*   findPlante (const std::string& nom)         const;
-    const Soil*    findSol    (const std::string& typeSol)     const;
-    const Pot*     findPot    (const std::string& typeRacin)   const;
-    const Bouture* findBouture(const std::string& nom)         const;
+    const Plant*    findPlante  (const std::string& nom)        const;
+    const Soil*     findSol     (const std::string& typeSol)    const;
+    const Racine*   findRacine  (const std::string& typeRacin)  const;
+    const Bouture*  findBouture (const std::string& nom)        const;
 
     // ── Listes pré-triées (calculées une seule fois au chargement) ────────
 
@@ -72,7 +72,7 @@ private:
     // ── Données brutes ────────────────────────────────────────────────────
     std::vector<Plant>   m_plantes;
     std::vector<Soil>    m_sols;
-    std::vector<Pot>     m_pots;
+    std::vector<Racine>  m_racines;
     std::vector<Bouture> m_boutures;
 
     // ── Cache des listes triées (calculé une seule fois) ──────────────────

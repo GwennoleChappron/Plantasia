@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <imgui.h>
+#include "UI/ColorTheme.hpp"
 
 // ═════════════════════════════════════════════════════════════════════════════
 //  EnumInfo.hpp — Source unique de vérité pour tous les enums de Plantasia
@@ -9,7 +10,7 @@
 //  SOMMAIRE DE L'ARCHITECTURE :
 //  Ce fichier fait le pont entre les données textuelles (JSON) et l'UI (ImGui).
 //  
-//  1. PALETTE & METADATA : Définition des couleurs et de la structure de base.
+//  1. METADATA           : Structure de base et fallback.
 //  2. ENUMS COMMUNS      : Partagés par plusieurs entités (Difficulté, Saisons, Racines).
 //  3. ENCYCLOPEDIA.JSON  : Enums spécifiques aux plantes (Rusticité, Expo, etc.).
 //  4. SOLS.JSON          : Enums liés aux substrats (Texture, CEC, Drainage...).
@@ -23,36 +24,7 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  1. PALETTE & STRUCTURES DE BASE
-// ─────────────────────────────────────────────────────────────────────────────
-
-namespace Palette {
-    // Verts (identité du projet)
-    constexpr ImVec4 VertVif     = { 0.20f, 0.75f, 0.40f, 1.f };   // Accent
-    constexpr ImVec4 VertDoux    = { 0.15f, 0.55f, 0.30f, 1.f };   // AccentDoux
-    constexpr ImVec4 VertSombre  = { 0.10f, 0.35f, 0.18f, 1.f };   // AccentSombre
-    constexpr ImVec4 VertPale    = { 0.55f, 0.68f, 0.55f, 1.f };   // TexteDoux
-
-    // Sémantiques
-    constexpr ImVec4 Rouge       = { 0.75f, 0.22f, 0.22f, 1.f };   // Danger
-    constexpr ImVec4 RougeDoux   = { 0.85f, 0.38f, 0.30f, 1.f };
-    constexpr ImVec4 Orange      = { 0.85f, 0.52f, 0.12f, 1.f };
-    constexpr ImVec4 OrangeDoux  = { 0.90f, 0.65f, 0.25f, 1.f };
-    constexpr ImVec4 Jaune       = { 0.88f, 0.80f, 0.20f, 1.f };
-    constexpr ImVec4 BleuCiel    = { 0.30f, 0.60f, 0.90f, 1.f };
-    constexpr ImVec4 BleuDoux    = { 0.40f, 0.68f, 0.85f, 1.f };
-    constexpr ImVec4 Violet      = { 0.58f, 0.35f, 0.75f, 1.f };
-    constexpr ImVec4 Rose        = { 0.85f, 0.42f, 0.62f, 1.f };
-    constexpr ImVec4 Brun        = { 0.55f, 0.35f, 0.18f, 1.f };
-    constexpr ImVec4 BrunClair   = { 0.72f, 0.52f, 0.30f, 1.f };
-    constexpr ImVec4 Sable       = { 0.80f, 0.72f, 0.45f, 1.f };
-    constexpr ImVec4 Gris        = { 0.50f, 0.50f, 0.50f, 1.f };
-    constexpr ImVec4 GrisClair   = { 0.68f, 0.68f, 0.68f, 1.f };
-    constexpr ImVec4 Blanc       = { 0.88f, 0.92f, 0.88f, 1.f };   // Texte
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Structure de métadonnée
+//  1. STRUCTURE DE MÉTADONNÉES & FALLBACK
 // ─────────────────────────────────────────────────────────────────────────────
 
 struct EnumMetadata {
@@ -61,19 +33,13 @@ struct EnumMetadata {
     ImVec4      color;        // Couleur sémantique pour tag / icône
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Fallback global (jamais affiché en production si les enums sont complets)
-// ─────────────────────────────────────────────────────────────────────────────
-
+// Fallback global (jamais affiché en production si les enums sont complets)
 inline const EnumMetadata& unknownMetadata() {
-    static EnumMetadata u{ "?", "Valeur inconnue", Palette::Gris };
+    static EnumMetadata u{ "?", "Valeur inconnue", Theme::TextMuted };
     return u;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Macro helper — évite la répétition dans les fonctions get()
-// ─────────────────────────────────────────────────────────────────────────────
-
+// Macro helper — évite la répétition dans les fonctions get()
 #define ENUM_MAP_LOOKUP(map, key) \
     { auto it = (map).find(key); \
       if (it != (map).end()) return it->second; \
@@ -83,6 +49,7 @@ inline const EnumMetadata& unknownMetadata() {
 // ═════════════════════════════════════════════════════════════════════════════
 //  2. ENUMS COMMUNS (Partagés entre plusieurs entités)
 // ═════════════════════════════════════════════════════════════════════════════
+
 enum class NiveauDifficulte { FACILE, MOYEN, DIFFICILE, INCONNU };
 enum class TypeRacinaireEnum { FASCICULE, PIVOTANT, TRACANT, LIGNEUX, TUBEREUX, INCONNU }; 
 enum class Saison { PRINTEMPS, ETE, AUTOMNE, HIVER, INTERIEUR, INCONNU };
@@ -92,9 +59,9 @@ namespace EnumInfo {
     inline const EnumMetadata& get(NiveauDifficulte v) {
         using N = NiveauDifficulte;
         static const std::unordered_map<N, EnumMetadata> map {
-            { N::FACILE,    { "Facile",    "Convient aux débutants, pardonne facilement les erreurs.",  Palette::VertVif   } },
-            { N::MOYEN,     { "Moyen",     "Demande un peu d'attention et de régularité.",              Palette::OrangeDoux} },
-            { N::DIFFICILE, { "Difficile", "Exige de l'expérience et des conditions précises.",         Palette::Rouge     } }
+            { N::FACILE,    { "Facile",    "Convient aux débutants, pardonne facilement les erreurs.",  Theme::PlantGreen } },
+            { N::MOYEN,     { "Moyen",     "Demande un peu d'attention et de régularité.",              Theme::Amber } },
+            { N::DIFFICILE, { "Difficile", "Exige de l'expérience et des conditions précises.",         Theme::DangerRed } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -104,11 +71,11 @@ namespace EnumInfo {
     inline const EnumMetadata& get(TypeRacinaireEnum v) {
         using T = TypeRacinaireEnum;
         static const std::unordered_map<T, EnumMetadata> map {
-            { T::FASCICULE, { "Fasciculé", "Racines fines et denses en surface.",                        Palette::VertDoux  } },
-            { T::PIVOTANT,  { "Pivotant",  "Racine principale profonde.",                                Palette::Brun      } },
-            { T::TRACANT,   { "Traçant",   "Stolons horizontaux envahissants.",                          Palette::OrangeDoux} },
-            { T::LIGNEUX,   { "Ligneux",   "Système racinaire fort et permanent.",                       Palette::BrunClair } },
-            { T::TUBEREUX,  { "Tubéreux",  "Racines renflées stockant des réserves (tubercules).",       Palette::Rose      } }
+            { T::FASCICULE, { "Fasciculé", "Racines fines et denses en surface.",                       Theme::PlantMid } },
+            { T::PIVOTANT,  { "Pivotant",  "Racine principale profonde.",                               Theme::darken(Theme::WarningOrange, 0.5f) } },
+            { T::TRACANT,   { "Traçant",   "Stolons horizontaux envahissants.",                         Theme::WarningOrange } },
+            { T::LIGNEUX,   { "Ligneux",   "Système racinaire fort et permanent.",                      Theme::darken(Theme::Amber, 0.5f) } },
+            { T::TUBEREUX,  { "Tubéreux",  "Racines renflées stockant des réserves (tubercules).",      Theme::Floraison } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -118,11 +85,11 @@ namespace EnumInfo {
     inline const EnumMetadata& get(Saison v) {
         using S = Saison;
         static const std::unordered_map<S, EnumMetadata> map {
-            { S::PRINTEMPS, { "Printemps", "Mars à mai — montée de sève.",                             Palette::VertVif   } },
-            { S::ETE,       { "Été",       "Juin à août — pleine croissance.",                         Palette::Jaune     } },
-            { S::AUTOMNE,   { "Automne",   "Septembre à novembre — ralentissement.",                   Palette::Orange    } },
-            { S::HIVER,     { "Hiver",     "Décembre à février — dormance.",                           Palette::BleuCiel  } },
-            { S::INTERIEUR, { "Intérieur", "Possible toute l'année en intérieur chauffé.",             Palette::Violet    } }
+            { S::PRINTEMPS, { "Printemps", "Mars à mai — montée de sève.",                              Theme::PlantGreen } },
+            { S::ETE,       { "Été",       "Juin à août — pleine croissance.",                          Theme::Amber } },
+            { S::AUTOMNE,   { "Automne",   "Septembre à novembre — ralentissement.",                    Theme::WarningOrange } },
+            { S::HIVER,     { "Hiver",     "Décembre à février — dormance.",                            Theme::InfoBlue } },
+            { S::INTERIEUR, { "Intérieur", "Possible toute l'année en intérieur chauffé.",              Theme::Violet } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -132,17 +99,25 @@ namespace EnumInfo {
     struct MoisMetadata { const char* court; const char* long_; ImVec4 color; };
     inline const MoisMetadata& getMois(int mois) {
         static const MoisMetadata table[13] = {
-            { "?",   "Inconnu",    Palette::Gris      },
-            { "Jan", "Janvier",    Palette::BleuCiel  }, { "Fév", "Février",    Palette::BleuDoux   },
-            { "Mar", "Mars",       Palette::VertPale  }, { "Avr", "Avril",      Palette::VertDoux   },
-            { "Mai", "Mai",        Palette::VertVif   }, { "Juin","Juin",       Palette::Jaune      },
-            { "Juil","Juillet",    Palette::Orange    }, { "Août","Août",       Palette::OrangeDoux },
-            { "Sep", "Septembre",  Palette::BrunClair }, { "Oct", "Octobre",    Palette::Brun       },
-            { "Nov", "Novembre",   Palette::GrisClair }, { "Déc", "Décembre",   Palette::BleuCiel   }
+            { "?",   "Inconnu",    Theme::TextMuted },
+            { "Jan", "Janvier",    Theme::InfoBlue }, 
+            { "Fév", "Février",    Theme::withAlpha(Theme::InfoBlue, 0.8f) },
+            { "Mar", "Mars",       Theme::TextSecondary }, 
+            { "Avr", "Avril",      Theme::PlantMid },
+            { "Mai", "Mai",        Theme::PlantGreen }, 
+            { "Juin","Juin",       Theme::Amber },
+            { "Juil","Juillet",    Theme::WarningOrange }, 
+            { "Août","Août",       Theme::withAlpha(Theme::WarningOrange, 0.8f) },
+            { "Sep", "Septembre",  Theme::darken(Theme::Amber, 0.6f) }, 
+            { "Oct", "Octobre",    Theme::darken(Theme::WarningOrange, 0.5f) },
+            { "Nov", "Novembre",   Theme::TextDisabled }, 
+            { "Déc", "Décembre",   Theme::InfoBlue }
         };
         return (mois >= 1 && mois <= 12) ? table[mois] : table[0];
     }
 } // namespace EnumInfo
+
+
 // ═════════════════════════════════════════════════════════════════════════════
 //  3. ENCYCLOPEDIA.JSON (Spécifique aux Plantes)
 // ═════════════════════════════════════════════════════════════════════════════
@@ -150,6 +125,11 @@ namespace EnumInfo {
 enum class Rusticite { RUSTIQUE, SEMI_RUSTIQUE, FRAGILE, INCONNU };
 enum class ExpositionSoleil { PLEIN_SOLEIL, MI_OMBRE, INCONNU };
 enum class ExpositionVent { MODERE, ABRITE, INCONNU };
+enum class VitesseCroissance { LENTE, MODEREE, RAPIDE, TRES_RAPIDE, INCONNU};
+enum class ToleranceSecheresse { EXCELLENTE, BONNE, MOYENNE, FAIBLE, TRES_FAIBLE, INCONNU };
+enum class SensibiliteEau { TRES_ELEVEE, ELEVEE, MOYENNE, FAIBLE, INCONNU };
+enum class TypeFeuillage { PERSISTANT, CADUC, SEMI_PERSISTANT, ANNUEL, BISANNUEL, INCONNU };
+enum class TypeBouture { BOUTURE_HERBACEE, BOUTURE_SEMI_LIGNEUSE, BOUTURE_LIGNEUSE, BOUTURE_EAU, BOUTURE_FEUILLE, BOUTURE_RACINE, INCONNU };
 
 namespace EnumInfo {
 
@@ -157,9 +137,9 @@ namespace EnumInfo {
     inline const EnumMetadata& get(Rusticite v) {
         using R = Rusticite;
         static const std::unordered_map<R, EnumMetadata> map {
-            { R::RUSTIQUE,      { "Rustique",      "Résiste au gel et aux hivers rigoureux.",          Palette::VertVif   } },
-            { R::SEMI_RUSTIQUE, { "Semi-rustique", "Supporte des gelées légères, à protéger.",         Palette::OrangeDoux} },
-            { R::FRAGILE,       { "Fragile",       "Craint le moindre gel, rentrée indispensable.",    Palette::Rouge     } }
+            { R::RUSTIQUE,      { "Rustique",      "Résiste au gel et aux hivers rigoureux.",          Theme::PlantGreen } },
+            { R::SEMI_RUSTIQUE, { "Semi-rustique", "Supporte des gelées légères, à protéger.",         Theme::Amber } },
+            { R::FRAGILE,       { "Fragile",       "Craint le moindre gel, rentrée indispensable.",    Theme::DangerRed } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -169,8 +149,8 @@ namespace EnumInfo {
     inline const EnumMetadata& get(ExpositionSoleil v) {
         using E = ExpositionSoleil;
         static const std::unordered_map<E, EnumMetadata> map {
-            { E::PLEIN_SOLEIL, { "Plein soleil", "Nécessite au minimum 6h de soleil direct/jour.",    Palette::Jaune    } },
-            { E::MI_OMBRE,     { "Mi-ombre",     "Préfère 3 à 5h de soleil, supporte l'ombre.",       Palette::VertDoux } }
+            { E::PLEIN_SOLEIL, { "Plein soleil", "Nécessite au minimum 6h de soleil direct/jour.",    Theme::Amber } },
+            { E::MI_OMBRE,     { "Mi-ombre",     "Préfère 3 à 5h de soleil, supporte l'ombre.",       Theme::PlantMid } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -180,8 +160,8 @@ namespace EnumInfo {
     inline const EnumMetadata& get(ExpositionVent v) {
         using E = ExpositionVent;
         static const std::unordered_map<E, EnumMetadata> map {
-            { E::MODERE, { "Vent modéré", "Tolère une exposition venteuse normale.",                  Palette::BleuDoux  } },
-            { E::ABRITE, { "Abrité",      "Fragile au vent, placer à l'abri d'un mur.",               Palette::BleuCiel  } }
+            { E::MODERE, { "Vent modéré", "Tolère une exposition venteuse normale.",                  Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { E::ABRITE, { "Abrité",      "Fragile au vent, placer à l'abri d'un mur.",               Theme::InfoBlue } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -191,15 +171,85 @@ namespace EnumInfo {
     struct BesoinEauMetadata { const char* label; const char* description; ImVec4 color; int gouttes; };
     inline const BesoinEauMetadata& getBesoinEau(int niveau) {
         static const BesoinEauMetadata table[6] = {
-            { "Nul",         "Arrosage quasi-inexistant.",                               Palette::Sable,     0 },
-            { "Très faible", "Arrosage très rare, forte sécheresse.",                    Palette::OrangeDoux,1 },
-            { "Faible",      "Arrosage peu fréquent, tolère la sécheresse.",             Palette::Jaune,     2 },
-            { "Moyen",       "Arrosage régulier, laisser sécher entre deux.",            Palette::VertPale,  3 },
-            { "Élevé",       "Arrosage fréquent, substrat légèrement humide.",           Palette::BleuDoux,  4 },
-            { "Très élevé",  "Arrosage très régulier, craint la sécheresse.",            Palette::BleuCiel,  5 }
+            { "Nul",         "Arrosage quasi-inexistant.",                               Theme::withAlpha(Theme::Amber, 0.7f),  0 },
+            { "Très faible", "Arrosage très rare, forte sécheresse.",                    Theme::withAlpha(Theme::WarningOrange, 0.8f), 1 },
+            { "Faible",      "Arrosage peu fréquent, tolère la sécheresse.",             Theme::Amber, 2 },
+            { "Moyen",       "Arrosage régulier, laisser sécher entre deux.",            Theme::TextSecondary, 3 },
+            { "Élevé",       "Arrosage fréquent, substrat légèrement humide.",           Theme::withAlpha(Theme::InfoBlue, 0.8f), 4 },
+            { "Très élevé",  "Arrosage très régulier, craint la sécheresse.",            Theme::InfoBlue, 5 }
         };
         return (niveau >= 0 && niveau <= 5) ? table[niveau] : table[0];
     }
+
+    inline const EnumMetadata& get(VitesseCroissance v) {
+        using V = VitesseCroissance;
+        static const std::unordered_map<V, EnumMetadata> map {
+            { V::LENTE,       { "Lente",       "Croissance lente, peu de rempotages nécessaires.",         Theme::TextSecondary } },
+            { V::MODEREE,     { "Modérée",     "Croissance régulière et prévisible.",                      Theme::PlantMid } },
+            { V::RAPIDE,      { "Rapide",      "Croît vite, surveiller le rempotage et la taille.",        Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { V::TRES_RAPIDE, { "Très rapide", "Envahissante possible, contenir dans un pot isolé.",       Theme::WarningOrange } },
+            { V::INCONNU,     { "?",           "Non renseignée.",                                          Theme::TextMuted } },
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(VitesseCroissance v) { return get(v).label.c_str();}
+
+    inline const EnumMetadata& get(ToleranceSecheresse v) {
+        using T = ToleranceSecheresse;
+        static const std::unordered_map<T, EnumMetadata> map {
+            { T::EXCELLENTE,  { "Excellente",  "Supporte de longues périodes sans eau.",                   Theme::withAlpha(Theme::Amber, 0.7f) } },
+            { T::BONNE,       { "Bonne",       "Tolère quelques oublis d'arrosage sans dommage.",          Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { T::MOYENNE,     { "Moyenne",     "Peut supporter 1-2 semaines de sécheresse en été.",        Theme::Amber } },
+            { T::FAIBLE,      { "Faible",      "Flétrit rapidement sans arrosage régulier.",               Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { T::TRES_FAIBLE, { "Très faible", "Exige un substrat constamment frais, flétrit en 24-48h.",  Theme::InfoBlue } },
+            { T::INCONNU,     { "?",           "Non renseignée.",                                          Theme::TextMuted } },
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(ToleranceSecheresse v) { return get(v).label.c_str(); }
+
+    inline const EnumMetadata& get(SensibiliteEau v) {
+        using S = SensibiliteEau;
+        static const std::unordered_map<S, EnumMetadata> map {
+            { S::TRES_ELEVEE, { "Très sensible",  "Le moindre excès provoque la pourriture des racines.",  Theme::DangerRed } },
+            { S::ELEVEE,      { "Sensible",       "Réduire fortement l'arrosage en hiver.",                Theme::DangerHover } },
+            { S::MOYENNE,     { "Moyenne",        "Tolère quelques excès ponctuels sans dommage grave.",   Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { S::FAIBLE,      { "Résistante",     "Apprécie un substrat constamment frais.",               Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { S::INCONNU,     { "?",              "Non renseignée.",                                       Theme::TextMuted } },
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(SensibiliteEau v) { return get(v).label.c_str(); }
+
+    inline const EnumMetadata& get(TypeFeuillage v) {
+        using F = TypeFeuillage;
+        static const std::unordered_map<F, EnumMetadata> map {
+            { F::PERSISTANT,       { "Persistant",       "Garde ses feuilles toute l'année.",                   Theme::PlantGreen } },
+            { F::CADUC,            { "Caduc",            "Perd ses feuilles en hiver, repos végétatif.",        Theme::darken(Theme::Amber, 0.5f) } },
+            { F::SEMI_PERSISTANT,  { "Semi-persistant",  "Garde une partie du feuillage selon les hivers.",     Theme::PlantMid } },
+            { F::ANNUEL,           { "Annuel",           "Cycle d'un an — repartir de semis ou boutures.",      Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { F::BISANNUEL,        { "Bisannuel",        "Cultivé comme annuel, fleurit la deuxième année.",    Theme::Amber } },
+            { F::INCONNU,          { "?",                "Non renseigné.",                                      Theme::TextMuted } },
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(TypeFeuillage v) { return get(v).label.c_str(); }
+
+    inline const EnumMetadata& get(TypeBouture v) {
+        using B = TypeBouture;
+        static const std::unordered_map<B, EnumMetadata> map {
+            { B::BOUTURE_HERBACEE,      { "Herbacée",      "Tige souple, enracinement rapide 1-3 sem.",         Theme::PlantGreen } },
+            { B::BOUTURE_SEMI_LIGNEUSE, { "Semi-ligneuse", "Tige aoûtée, enracinement 1-2 mois.",               Theme::PlantMid } },
+            { B::BOUTURE_LIGNEUSE,      { "Ligneuse",      "Bois dormant, enracinement lent 2-4 mois.",         Theme::darken(Theme::WarningOrange, 0.5f) } },
+            { B::BOUTURE_EAU,           { "Dans l'eau",    "Dans un verre d'eau, sans substrat.",               Theme::InfoBlue } },
+            { B::BOUTURE_FEUILLE,       { "Par feuille",   "Feuille entière posée sur substrat drainant.",      Theme::TextSecondary } },
+            { B::BOUTURE_RACINE,        { "Par racine",    "Segment de racine en hiver — technique avancée.",   Theme::darken(Theme::Amber, 0.5f) } },
+            { B::INCONNU,               { "?",             "Type non renseigné.",                               Theme::TextMuted } },
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(TypeBouture v) { return get(v).label.c_str(); }
+
 }
 
 
@@ -220,7 +270,7 @@ enum class VieMicrobienne { TRES_ELEVEE, MOYENNE, FAIBLE, INCONNU };
 enum class Mineralisation { RAPIDE, MODEREE, LENTE, INCONNU };
 enum class CompatibiliteCalcaire { EXCELLENTE, MOYENNE, TRES_FAIBLE, INCONNU };
 enum class CorrectionAcidite { CHAUX, CENDRES, CALCAIRE, EAU_CALCAIRE, TERREAU_UNIVERSEL, COMPOST, INCONNU };
-enum class CorrectionAlcalinite { TERRE_BRUYERE, SOUFRE, EAU_PLUIE, COMPOST, TERREAU_UNIVERSEL, TERRE_BRUYERE, INCONNU };
+enum class CorrectionAlcalinite { TERRE_BRUYERE, SOUFRE, EAU_PLUIE, COMPOST, TERREAU_UNIVERSEL, INCONNU };
 enum class CompositionSol { TOURBE, COMPOST, FIBRES_VEGETALES, SABLE, POUZZOLANE, CALCAIRE, MATIERE_ORGANIQUE_ACIDE, COMPOST_ENRICHI, ENGRAIS_ORGANIQUE, ECORCES, ARGILE, INCONNU };
 enum class risquesSol { TASSEMENT, APPAUVRISSEMENT, COMPACTION, LESSIVAGE, EXCES_AZOTE, CARENCES, PAUVRETE_LONG_TERME, INCONNU };
 enum class frequenceRenouvellement { TOUS_1_2_ANS, TOUS_2_3_ANS, TOUS_3_5_ANS, TOUS_5_10_ANS, TOUS_10_20_ANS, JAMAIS, INCONNU };
@@ -231,16 +281,16 @@ namespace EnumInfo {
     // Type Sol
     inline const EnumMetadata& get(TypeSol v) {
         static const std::unordered_map<TypeSol, EnumMetadata> map {
-            { TypeSol::TERREAU_UNIVERSEL,         { "Universel",      "Polyvalent pour aromatiques.",      Palette::VertDoux  } },
-            { TypeSol::TERREAU_MEDITERRANEEN,     { "Méditerranéen",  "Très drainant, pauvre.",            Palette::OrangeDoux} },
-            { TypeSol::TERRE_BRUYERE,             { "Terre Bruyère",  "Sol acide.",                        Palette::Violet    } },
-            { TypeSol::TERREAU_HORTICOLE_ENRICHI, { "Horticole",      "Très fertile, gourmandes.",         Palette::VertVif   } },
-            { TypeSol::SUBSTRAT_AGRUMES,          { "Agrumes",        "Spécial Yuzu/Agrumes.",             Palette::Jaune     } },
-            { TypeSol::TERREAU_SEMIS,             { "Semis",          "Très fin et stérile.",              Palette::GrisClair } },
-            { TypeSol::SOL_ARGILEUX,              { "Argileux",       "Lourd et fertile.",                 Palette::Brun      } },
-            { TypeSol::EPIPHYTE,                  { "Épiphyte",       "Mélange d'écorces et sphaigne.",    Palette::BrunClair } },
-            { TypeSol::DRAINANT,                  { "Drainant",       "Spécial succulentes et cactées.",   Palette::Gris      } },
-            { TypeSol::SOL_SABLEUX,               { "Sableux",        "Très drainant.",                    Palette::Sable     } }
+            { TypeSol::TERREAU_UNIVERSEL,         { "Universel",      "Polyvalent pour aromatiques.",      Theme::PlantMid } },
+            { TypeSol::TERREAU_MEDITERRANEEN,     { "Méditerranéen",  "Très drainant, pauvre.",            Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { TypeSol::TERRE_BRUYERE,             { "Terre Bruyère",  "Sol acide.",                        Theme::PhAcide } },
+            { TypeSol::TERREAU_HORTICOLE_ENRICHI, { "Horticole",      "Très fertile, gourmandes.",         Theme::PlantGreen } },
+            { TypeSol::SUBSTRAT_AGRUMES,          { "Agrumes",        "Spécial Yuzu/Agrumes.",             Theme::Amber } },
+            { TypeSol::TERREAU_SEMIS,             { "Semis",          "Très fin et stérile.",              Theme::TextDisabled } },
+            { TypeSol::SOL_ARGILEUX,              { "Argileux",       "Lourd et fertile.",                 Theme::darken(Theme::WarningOrange, 0.5f) } },
+            { TypeSol::EPIPHYTE,                  { "Épiphyte",       "Mélange d'écorces et sphaigne.",    Theme::darken(Theme::Amber, 0.5f) } },
+            { TypeSol::DRAINANT,                  { "Drainant",       "Spécial succulentes et cactées.",   Theme::TextMuted } },
+            { TypeSol::SOL_SABLEUX,               { "Sableux",        "Très drainant.",                    Theme::withAlpha(Theme::Amber, 0.7f) } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(TypeSol v) { return get(v).label.c_str(); }
@@ -248,14 +298,14 @@ namespace EnumInfo {
     // Texture Sol
     inline const EnumMetadata& get(TextureSol v) {
         static const std::unordered_map<TextureSol, EnumMetadata> map {
-            { TextureSol::TRES_LEGER,        { "Très léger",        "Majoritairement sableux.",                Palette::Sable     } },
-            { TextureSol::LEGER_CAILLOUTEUX, { "Caillouteux",       "Mélange sable + graviers.",               Palette::BrunClair } },
-            { TextureSol::LEGERE,            { "Légère",            "Sol meuble et aéré.",                     Palette::VertPale  } },
-            { TextureSol::AERE,              { "Aéré",              "Structure ouverte.",                      Palette::BleuDoux  } },
-            { TextureSol::SOUPLE,            { "Souple",            "Ni trop compacte ni trop meuble.",        Palette::VertDoux  } },
-            { TextureSol::EQUILIBREE,        { "Équilibrée",        "Bonne structure limon-argile-sable.",     Palette::VertVif   } },
-            { TextureSol::TRES_FINE,         { "Très fine",         "Idéale pour la germination.",             Palette::GrisClair } },
-            { TextureSol::LOURDE,            { "Lourde",            "Sol argileux collant.",                   Palette::Brun      } }
+            { TextureSol::TRES_LEGER,        { "Très léger",        "Majoritairement sableux.",                Theme::withAlpha(Theme::Amber, 0.7f) } },
+            { TextureSol::LEGER_CAILLOUTEUX, { "Caillouteux",       "Mélange sable + graviers.",               Theme::darken(Theme::Amber, 0.5f) } },
+            { TextureSol::LEGERE,            { "Légère",            "Sol meuble et aéré.",                     Theme::TextSecondary } },
+            { TextureSol::AERE,              { "Aéré",              "Structure ouverte.",                      Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { TextureSol::SOUPLE,            { "Souple",            "Ni trop compacte ni trop meuble.",        Theme::PlantMid } },
+            { TextureSol::EQUILIBREE,        { "Équilibrée",        "Bonne structure limon-argile-sable.",     Theme::PlantGreen } },
+            { TextureSol::TRES_FINE,         { "Très fine",         "Idéale pour la germination.",             Theme::TextDisabled } },
+            { TextureSol::LOURDE,            { "Lourde",            "Sol argileux collant.",                   Theme::darken(Theme::WarningOrange, 0.5f) } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(TextureSol v) { return get(v).label.c_str(); }
@@ -263,12 +313,12 @@ namespace EnumInfo {
     // Drainage Sol
     inline const EnumMetadata& get(DrainageSol v) {
         static const std::unordered_map<DrainageSol, EnumMetadata> map {
-            { DrainageSol::TRES_RAPIDE, { "Très rapide", "L'eau traverse immédiatement.",                 Palette::Sable     } },
-            { DrainageSol::EXCELLENT,   { "Excellent",   "Évacuation rapide, jamais détrempé.",           Palette::OrangeDoux} },
-            { DrainageSol::TRES_BON,    { "Très bon",    "Bonne évacuation, légère rétention utile.",     Palette::VertDoux  } },
-            { DrainageSol::BON,         { "Bon",         "Drainage satisfaisant.",                        Palette::VertVif   } },
-            { DrainageSol::MOYEN,       { "Moyen",       "Rétention modérée.",                            Palette::OrangeDoux} },
-            { DrainageSol::FAIBLE,      { "Faible",      "Risque d'asphyxie racinaire.",                  Palette::Rouge     } }
+            { DrainageSol::TRES_RAPIDE, { "Très rapide", "L'eau traverse immédiatement.",                  Theme::withAlpha(Theme::Amber, 0.7f) } },
+            { DrainageSol::EXCELLENT,   { "Excellent",   "Évacuation rapide, jamais détrempé.",            Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { DrainageSol::TRES_BON,    { "Très bon",    "Bonne évacuation, légère rétention utile.",      Theme::PlantMid } },
+            { DrainageSol::BON,         { "Bon",         "Drainage satisfaisant.",                         Theme::PlantGreen } },
+            { DrainageSol::MOYEN,       { "Moyen",       "Rétention modérée.",                             Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { DrainageSol::FAIBLE,      { "Faible",      "Risque d'asphyxie racinaire.",                   Theme::DangerRed } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(DrainageSol v) { return get(v).label.c_str(); }
@@ -276,10 +326,10 @@ namespace EnumInfo {
     // Rétention Eau Sol
     inline const EnumMetadata& get(RetentionEau v) {
         static const std::unordered_map<RetentionEau, EnumMetadata> map {
-            { RetentionEau::TRES_FORTE, { "Très forte", "Sol saturant — espacement arrosages.",           Palette::BleuCiel  } },
-            { RetentionEau::BONNE,      { "Bonne",      "Retient bien l'humidité.",                       Palette::BleuDoux  } },
-            { RetentionEau::MOYENNE,    { "Moyenne",    "Équilibre correct drainage/rétention.",          Palette::VertDoux  } },
-            { RetentionEau::FAIBLE,     { "Faible",     "Sèche vite, arrosage fréquent.",                 Palette::OrangeDoux} }
+            { RetentionEau::TRES_FORTE, { "Très forte", "Sol saturant — espacement arrosages.",            Theme::InfoBlue } },
+            { RetentionEau::BONNE,      { "Bonne",      "Retient bien l'humidité.",                        Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { RetentionEau::MOYENNE,    { "Moyenne",    "Équilibre correct drainage/rétention.",           Theme::PlantMid } },
+            { RetentionEau::FAIBLE,     { "Faible",     "Sèche vite, arrosage fréquent.",                  Theme::withAlpha(Theme::WarningOrange, 0.8f) } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(RetentionEau v) { return get(v).label.c_str(); }
@@ -287,10 +337,10 @@ namespace EnumInfo {
     // Richesse Sol
     inline const EnumMetadata& get(RichesseSol v) {
         static const std::unordered_map<RichesseSol, EnumMetadata> map {
-            { RichesseSol::ELEVEE,         { "Élevée",         "Sol très fertile.",                       Palette::VertVif   } },
-            { RichesseSol::MOYENNE_ELEVEE, { "Moyenne-élevée", "Bonne fertilité.",                        Palette::VertDoux  } },
-            { RichesseSol::MOYENNE,        { "Moyenne",        "Fertilité standard.",                     Palette::OrangeDoux} },
-            { RichesseSol::FAIBLE,         { "Faible",         "Sol pauvre — idéal méditerranéennes.",    Palette::Sable     } }
+            { RichesseSol::ELEVEE,         { "Élevée",         "Sol très fertile.",                        Theme::PlantGreen } },
+            { RichesseSol::MOYENNE_ELEVEE, { "Moyenne-élevée", "Bonne fertilité.",                         Theme::PlantMid } },
+            { RichesseSol::MOYENNE,        { "Moyenne",        "Fertilité standard.",                      Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { RichesseSol::FAIBLE,         { "Faible",         "Sol pauvre — idéal méditerranéennes.",     Theme::withAlpha(Theme::Amber, 0.7f) } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(RichesseSol v) { return get(v).label.c_str(); }
@@ -298,11 +348,11 @@ namespace EnumInfo {
     // CEC Sol
     inline const EnumMetadata& get(CecSol v) {
         static const std::unordered_map<CecSol, EnumMetadata> map {
-            { CecSol::TRES_ELEVEE, { "Très élevée", "Rétention maximale des engrais.",                    Palette::VertVif   } },
-            { CecSol::ELEVEE,      { "Élevée",      "Bonne capacité à retenir les nutriments.",           Palette::VertDoux  } },
-            { CecSol::MOYENNE,     { "Moyenne",     "Apports réguliers recommandés.",                     Palette::OrangeDoux} },
-            { CecSol::FAIBLE,      { "Faible",      "Lessivage rapide des nutriments.",                   Palette::Orange    } },
-            { CecSol::TRES_FAIBLE, { "Très faible", "Sol quasi-inerte.",                                  Palette::Rouge     } }
+            { CecSol::TRES_ELEVEE, { "Très élevée", "Rétention maximale des engrais.",                     Theme::PlantGreen } },
+            { CecSol::ELEVEE,      { "Élevée",      "Bonne capacité à retenir les nutriments.",            Theme::PlantMid } },
+            { CecSol::MOYENNE,     { "Moyenne",     "Apports réguliers recommandés.",                      Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { CecSol::FAIBLE,      { "Faible",      "Lessivage rapide des nutriments.",                    Theme::WarningOrange } },
+            { CecSol::TRES_FAIBLE, { "Très faible", "Sol quasi-inerte.",                                   Theme::DangerRed } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(CecSol v) { return get(v).label.c_str(); }
@@ -310,11 +360,11 @@ namespace EnumInfo {
     // Aération Sol
     inline const EnumMetadata& get(AerationSol v) {
         static const std::unordered_map<AerationSol, EnumMetadata> map {
-            { AerationSol::EXCELLENTE,  { "Excellente",  "Circulation d'air optimale.",                   Palette::VertVif   } },
-            { AerationSol::TRES_ELEVEE, { "Très élevée", "Très bonne oxygénation.",                       Palette::VertDoux  } },
-            { AerationSol::BONNE,       { "Bonne",       "Aération correcte.",                            Palette::VertPale  } },
-            { AerationSol::MOYENNE,     { "Moyenne",     "Aération acceptable, attention au tassement.",  Palette::OrangeDoux} },
-            { AerationSol::TRES_FAIBLE, { "Très faible", "Sol compact — risque de pourriture.",           Palette::Rouge     } }
+            { AerationSol::EXCELLENTE,  { "Excellente",  "Circulation d'air optimale.",                    Theme::PlantGreen } },
+            { AerationSol::TRES_ELEVEE, { "Très élevée", "Très bonne oxygénation.",                        Theme::PlantMid } },
+            { AerationSol::BONNE,       { "Bonne",       "Aération correcte.",                             Theme::TextSecondary } },
+            { AerationSol::MOYENNE,     { "Moyenne",     "Aération acceptable, attention au tassement.",   Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { AerationSol::TRES_FAIBLE, { "Très faible", "Sol compact — risque de pourriture.",            Theme::DangerRed } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(AerationSol v) { return get(v).label.c_str(); }
@@ -322,9 +372,9 @@ namespace EnumInfo {
     // Vie Microbienne Sol
     inline const EnumMetadata& get(VieMicrobienne v) {
         static const std::unordered_map<VieMicrobienne, EnumMetadata> map {
-            { VieMicrobienne::TRES_ELEVEE, { "Très élevée", "Sol vivant et actif.",                       Palette::VertVif   } },
-            { VieMicrobienne::MOYENNE,     { "Moyenne",     "Activité microbienne correcte.",             Palette::VertDoux  } },
-            { VieMicrobienne::FAIBLE,      { "Faible",      "Peu de vie biologique.",                     Palette::OrangeDoux} }
+            { VieMicrobienne::TRES_ELEVEE, { "Très élevée", "Sol vivant et actif.",                        Theme::PlantGreen } },
+            { VieMicrobienne::MOYENNE,     { "Moyenne",     "Activité microbienne correcte.",              Theme::PlantMid } },
+            { VieMicrobienne::FAIBLE,      { "Faible",      "Peu de vie biologique.",                      Theme::withAlpha(Theme::WarningOrange, 0.8f) } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(VieMicrobienne v) { return get(v).label.c_str(); }
@@ -332,11 +382,11 @@ namespace EnumInfo {
     // Densité Sol
     inline const EnumMetadata& get(DensiteSol v) {
         static const std::unordered_map<DensiteSol, EnumMetadata> map {
-            { DensiteSol::TRES_LEGERE, { "Très légère", "Sol très aéré, idéal pour semis et boutures.", Palette::Sable     } },
-            { DensiteSol::LEGERE,      { "Légère",      "Sol meuble, facile à travailler.",              Palette::VertPale  } },
-            { DensiteSol::MOYENNE,     { "Moyenne",     "Densité standard, bonne rétention d'eau.",     Palette::VertDoux  } },
-            { DensiteSol::LOURDE,      { "Lourde",      "Sol compact, riche en argile.",                Palette::Brun      } },
-            { DensiteSol::TRES_LOURDE, { "Très lourde", "Sol très compact et collant.",               Palette::BrunClair } }
+            { DensiteSol::TRES_LEGERE, { "Très légère", "Sol très aéré, idéal pour semis et boutures.",    Theme::withAlpha(Theme::Amber, 0.7f) } },
+            { DensiteSol::LEGERE,      { "Légère",      "Sol meuble, facile à travailler.",                Theme::TextSecondary } },
+            { DensiteSol::MOYENNE,     { "Moyenne",     "Densité standard, bonne rétention d'eau.",        Theme::PlantMid } },
+            { DensiteSol::LOURDE,      { "Lourde",      "Sol compact, riche en argile.",                   Theme::darken(Theme::WarningOrange, 0.5f) } },
+            { DensiteSol::TRES_LOURDE, { "Très lourde", "Sol très compact et collant.",                    Theme::darken(Theme::Amber, 0.5f) } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(DensiteSol v) { return get(v).label.c_str(); }
@@ -344,11 +394,11 @@ namespace EnumInfo {
     // Tampon pH Sol
     inline const EnumMetadata& get(tamponPh v) {
         static const std::unordered_map<tamponPh, EnumMetadata> map {
-            { tamponPh::TRES_FORT,  { "Très fort",  "Sol très résistant aux variations de pH.",   Palette::VertVif   } },
-            { tamponPh::FORT,       { "Fort",       "Bonne résistance aux changements de pH.",     Palette::VertDoux  } },
-            { tamponPh::MOYEN,      { "Moyen",      "Résistance modérée aux variations de pH.",    Palette::OrangeDoux} },
-            { tamponPh::FAIBLE,     { "Faible",     "Sol sensible aux changements de pH.",         Palette::Orange    } },
-            { tamponPh::TRES_FAIBLE, { "Très faible", "Sol très sensible, risque de stress pour la plante.", Palette::Rouge     } }
+            { tamponPh::TRES_FORT,  { "Très fort",  "Sol très résistant aux variations de pH.",            Theme::PlantGreen } },
+            { tamponPh::FORT,       { "Fort",       "Bonne résistance aux changements de pH.",             Theme::PlantMid } },
+            { tamponPh::MOYEN,      { "Moyenne",    "Résistance modérée aux variations de pH.",            Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { tamponPh::FAIBLE,     { "Faible",     "Sol sensible aux changements de pH.",                 Theme::WarningOrange } },
+            { tamponPh::TRES_FAIBLE, { "Très faible", "Sol très sensible, risque de stress pour la plante.",Theme::DangerRed } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(tamponPh v) { return get(v).label.c_str(); }
@@ -356,9 +406,9 @@ namespace EnumInfo {
     // Mineralisation
     inline const EnumMetadata& get(Mineralisation v) {
         static const std::unordered_map<Mineralisation, EnumMetadata> map {
-            { Mineralisation::RAPIDE,   { "Rapide",   "Nutriments disponibles rapidement.",               Palette::VertVif   } },
-            { Mineralisation::MODEREE,  { "Modérée",  "Libération progressive et équilibrée.",            Palette::VertDoux  } },
-            { Mineralisation::LENTE,    { "Lente",    "Réserves sur le long terme.",                      Palette::OrangeDoux} }
+            { Mineralisation::RAPIDE,   { "Rapide",   "Nutriments disponibles rapidement.",                Theme::PlantGreen } },
+            { Mineralisation::MODEREE,  { "Modérée",  "Libération progressive et équilibrée.",             Theme::PlantMid } },
+            { Mineralisation::LENTE,    { "Lente",    "Réserves sur le long terme.",                       Theme::withAlpha(Theme::WarningOrange, 0.8f) } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(Mineralisation v) { return get(v).label.c_str(); }
@@ -366,9 +416,9 @@ namespace EnumInfo {
     // Compatibilité au calcaire
     inline const EnumMetadata& get(CompatibiliteCalcaire v) {
         static const std::unordered_map<CompatibiliteCalcaire, EnumMetadata> map {
-            { CompatibiliteCalcaire::EXCELLENTE,  { "Excellente",  "Tolère et apprécie les sols calcaires.",       Palette::VertVif   } },
-            { CompatibiliteCalcaire::MOYENNE,     { "Moyenne",     "Tolère une légère présence de calcaire.",      Palette::OrangeDoux} },
-            { CompatibiliteCalcaire::TRES_FAIBLE, { "Très faible", "Le calcaire provoque une chlorose.",           Palette::Rouge     } }
+            { CompatibiliteCalcaire::EXCELLENTE,  { "Excellente",  "Tolère et apprécie les sols calcaires.",       Theme::PlantGreen } },
+            { CompatibiliteCalcaire::MOYENNE,     { "Moyenne",     "Tolère une légère présence de calcaire.",      Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { CompatibiliteCalcaire::TRES_FAIBLE, { "Très faible", "Le calcaire provoque une chlorose.",           Theme::DangerRed } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(CompatibiliteCalcaire v) { return get(v).label.c_str(); }
@@ -376,12 +426,12 @@ namespace EnumInfo {
     // Correction Acidité
     inline const EnumMetadata& get(CorrectionAcidite v) {
         static const std::unordered_map<CorrectionAcidite, EnumMetadata> map {
-            { CorrectionAcidite::CHAUX,             { "Chaux",             "Élimine l'acidité du sol.",                         Palette::Sable     } },
-            { CorrectionAcidite::CENDRES,           { "Cendres",           "Légère correction de l'acidité.",                   Palette::BrunClair } },
-            { CorrectionAcidite::CALCAIRE,          { "Calcaire",          "Corrige l'acidité et enrichit en calcium.",         Palette::Brun      } },
-            { CorrectionAcidite::EAU_CALCAIRE,      { "Eau calcaire",      "Arrosage avec eau dure pour réduire l'acidité.",    Palette::GrisClair } },
-            { CorrectionAcidite::TERREAU_UNIVERSEL, { "Terreau universel", "Substrat équilibré pour corriger l'acidité.",       Palette::VertDoux  } },
-            { CorrectionAcidite::COMPOST,           { "Compost",           "Amendement organique qui peut réduire l'acidité.",  Palette::VertVif   } }
+            { CorrectionAcidite::CHAUX,             { "Chaux",             "Élimine l'acidité du sol.",                         Theme::PhBasique } },
+            { CorrectionAcidite::CENDRES,           { "Cendres",           "Légère correction de l'acidité.",                   Theme::darken(Theme::Amber, 0.5f) } },
+            { CorrectionAcidite::CALCAIRE,          { "Calcaire",          "Corrige l'acidité et enrichit en calcium.",         Theme::PhBasique } },
+            { CorrectionAcidite::EAU_CALCAIRE,      { "Eau calcaire",      "Arrosage avec eau dure pour réduire l'acidité.",    Theme::TextDisabled } },
+            { CorrectionAcidite::TERREAU_UNIVERSEL, { "Terreau universel", "Substrat équilibré pour corriger l'acidité.",       Theme::PlantMid } },
+            { CorrectionAcidite::COMPOST,           { "Compost",           "Amendement organique qui peut réduire l'acidité.",  Theme::PlantGreen } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(CorrectionAcidite v) { return get(v).label.c_str(); }
@@ -389,12 +439,11 @@ namespace EnumInfo {
     // Correction Alcalinité
     inline const EnumMetadata& get(CorrectionAlcalinite v) {
         static const std::unordered_map<CorrectionAlcalinite, EnumMetadata> map {
-            { CorrectionAlcalinite::TERRE_BRUYERE,      { "Terre de bruyère",   "Substrat acide pour corriger l'alcalinité.",           Palette::Violet    } },
-            { CorrectionAlcalinite::SOUFRE,             { "Soufre",             "Amendement qui acidifie le sol.",                      Palette::Rouge     } },
-            { CorrectionAlcalinite::EAU_PLUIE,          { "Eau de pluie",       "Arrosage avec eau douce pour réduire l'alcalinité.",   Palette::BleuDoux  } },
-            { CorrectionAlcalinite::COMPOST,            { "Compost",            "Amendement organique qui peut acidifier le sol.",      Palette::VertVif   } },
-            { CorrectionAlcalinite::TERREAU_UNIVERSEL,  { "Terreau universel",  "Substrat équilibré pour corriger l'alcalinité.",       Palette::VertDoux  } },
-            { CorrectionAlcalinite::TERRE_BRUYERE,      { "Terre de bruyère",   "Substrat acide pour corriger l'alcalinité.",           Palette::Violet    } }
+            { CorrectionAlcalinite::TERRE_BRUYERE,      { "Terre de bruyère",   "Substrat acide pour corriger l'alcalinité.",           Theme::PhAcide } },
+            { CorrectionAlcalinite::SOUFRE,             { "Soufre",             "Amendement qui acidifie le sol.",                      Theme::PhAcide } },
+            { CorrectionAlcalinite::EAU_PLUIE,          { "Eau de pluie",       "Arrosage avec eau douce pour réduire l'alcalinité.",   Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { CorrectionAlcalinite::COMPOST,            { "Compost",            "Amendement organique qui peut acidifier le sol.",      Theme::PlantGreen } },
+            { CorrectionAlcalinite::TERREAU_UNIVERSEL,  { "Terreau universel",  "Substrat équilibré pour corriger l'alcalinité.",       Theme::PlantMid } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(CorrectionAlcalinite v) { return get(v).label.c_str(); }
@@ -402,17 +451,17 @@ namespace EnumInfo {
     // Composition Sol
     inline const EnumMetadata& get(CompositionSol v) {
         static const std::unordered_map<CompositionSol, EnumMetadata> map {
-            { CompositionSol::TOURBE,                   { "Tourbe",                 "Matière organique acide, retient bien l'eau.",     Palette::BrunClair } },
-            { CompositionSol::COMPOST,                  { "Compost",                "Matière organique riche en nutriments.",           Palette::VertVif   } },
-            { CompositionSol::FIBRES_VEGETALES,         { "Fibres végétales",       "Amendement organique léger et aéré.",              Palette::VertDoux  } },
-            { CompositionSol::SABLE,                    { "Sable",                  "Particule minérale drainante.",                    Palette::Sable     } },
-            { CompositionSol::POUZZOLANE,               { "Pouzzolane",             "Gravier volcanique léger et drainant.",            Palette::Gris      } },
-            { CompositionSol::CALCAIRE,                 { "Calcaire",               "Particule minérale alcaline.",                     Palette::Brun      } },
-            { CompositionSol::MATIERE_ORGANIQUE_ACIDE,  { "Matière organique acide", "Amendement pour sols acides.",                    Palette::Violet    } },
-            { CompositionSol::COMPOST_ENRICHI,          { "Compost enrichi",        "Compost très riche en nutriments.",                Palette::VertVif   } },
-            { CompositionSol::ENGRAIS_ORGANIQUE,        { "Engrais organique",      "Source concentrée de nutriments naturels.",        Palette::VertDoux  } },
-            { CompositionSol::ECORCES,                  { "Écorces",                "Amendement organique grossier pour aérer le sol.", Palette::BrunClair } },
-            { CompositionSol::ARGILE,                   { "Argile",                 "Particule minérale lourde et collante.",           Palette::Brun      } }
+            { CompositionSol::TOURBE,                   { "Tourbe",                 "Matière organique acide, retient bien l'eau.",     Theme::darken(Theme::Amber, 0.5f) } },
+            { CompositionSol::COMPOST,                  { "Compost",                "Matière organique riche en nutriments.",           Theme::PlantGreen } },
+            { CompositionSol::FIBRES_VEGETALES,         { "Fibres végétales",       "Amendement organique léger et aéré.",              Theme::PlantMid } },
+            { CompositionSol::SABLE,                    { "Sable",                  "Particule minérale drainante.",                    Theme::withAlpha(Theme::Amber, 0.7f) } },
+            { CompositionSol::POUZZOLANE,               { "Pouzzolane",             "Gravier volcanique léger et drainant.",            Theme::TextMuted } },
+            { CompositionSol::CALCAIRE,                 { "Calcaire",               "Particule minérale alcaline.",                     Theme::PhBasique } },
+            { CompositionSol::MATIERE_ORGANIQUE_ACIDE,  { "Matière organique acide","Amendement pour sols acides.",                     Theme::PhAcide } },
+            { CompositionSol::COMPOST_ENRICHI,          { "Compost enrichi",        "Compost très riche en nutriments.",                Theme::PlantGreen } },
+            { CompositionSol::ENGRAIS_ORGANIQUE,        { "Engrais organique",      "Source concentrée de nutriments naturels.",        Theme::PlantMid } },
+            { CompositionSol::ECORCES,                  { "Écorces",                "Amendement organique grossier pour aérer le sol.", Theme::darken(Theme::Amber, 0.5f) } },
+            { CompositionSol::ARGILE,                   { "Argile",                 "Particule minérale lourde et collante.",           Theme::darken(Theme::WarningOrange, 0.5f) } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(CompositionSol v) { return get(v).label.c_str(); }
@@ -420,13 +469,13 @@ namespace EnumInfo {
     // Risques Sol
     inline const EnumMetadata& get(risquesSol v) {
         static const std::unordered_map<risquesSol, EnumMetadata> map {
-            { risquesSol::TASSEMENT,            { "Tassement",          "Risque de sol compacté, réduire les passages.",                            Palette::Rouge     } },
-            { risquesSol::APPAUVRISSEMENT,      { "Appauvrissement",    "Perte de nutriments, amendement régulier conseillé.",                      Palette::OrangeDoux} },
-            { risquesSol::COMPACTION,           { "Compaction",         "Risque de sol durci, éviter de travailler à la mauvaise période.",         Palette::Rouge     } },
-            { risquesSol::LESSIVAGE,            { "Lessivage",          "Risque de nutriments emportés par les eaux d'arrosage.",                   Palette::BleuDoux  } },
-            { risquesSol::EXCES_AZOTE,          { "Excès d'azote",      "Favorise la croissance au détriment de la floraison.",                     Palette::Orange    } },
-            { risquesSol::CARENCES,             { "Carences",           "Manque de nutriments essentiels, surveiller la fertilité.",                Palette::Rouge     } },
-            { risquesSol::PAUVRETE_LONG_TERME,  { "Pauvreté long terme", "Dégradation progressive du sol, rotation et amendement nécessaires.",     Palette::Rouge     } }
+            { risquesSol::TASSEMENT,            { "Tassement",           "Risque de sol compacté, réduire les passages.",                            Theme::DangerRed } },
+            { risquesSol::APPAUVRISSEMENT,      { "Appauvrissement",     "Perte de nutriments, amendement régulier conseillé.",                      Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { risquesSol::COMPACTION,           { "Compaction",          "Risque de sol durci, éviter de travailler à la mauvaise période.",         Theme::DangerRed } },
+            { risquesSol::LESSIVAGE,            { "Lessivage",           "Risque de nutriments emportés par les eaux d'arrosage.",                   Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { risquesSol::EXCES_AZOTE,          { "Excès d'azote",       "Favorise la croissance au détriment de la floraison.",                     Theme::WarningOrange } },
+            { risquesSol::CARENCES,             { "Carences",            "Manque de nutriments essentiels, surveiller la fertilité.",                Theme::DangerRed } },
+            { risquesSol::PAUVRETE_LONG_TERME,  { "Pauvreté long terme", "Dégradation progressive du sol, rotation et amendement nécessaires.",      Theme::DangerRed } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(risquesSol v) { return get(v).label.c_str(); }
@@ -450,10 +499,10 @@ namespace EnumInfo {
     // Forme du pot
     inline const EnumMetadata& get(FormePot v) {
         static const std::unordered_map<FormePot, EnumMetadata> map {
-            { FormePot::BAC,       { "Bac",         "Grand contenant carré ou rectangulaire.",  Palette::BrunClair } },
-            { FormePot::COLONNE,   { "Colonne",     "Pot haut et étroit.",                      Palette::Brun      } },
-            { FormePot::JARDINIERE,{ "Jardinière",  "Contenant long et peu profond.",           Palette::VertDoux  } },
-            { FormePot::STANDARD,  { "Standard",    "Pot classique arrondi.",                   Palette::GrisClair } }
+            { FormePot::BAC,        { "Bac",         "Grand contenant carré ou rectangulaire.",  Theme::darken(Theme::Amber, 0.5f) } },
+            { FormePot::COLONNE,    { "Colonne",     "Pot haut et étroit.",                      Theme::darken(Theme::WarningOrange, 0.5f) } },
+            { FormePot::JARDINIERE, { "Jardinière",  "Contenant long et peu profond.",           Theme::PlantMid } },
+            { FormePot::STANDARD,   { "Standard",    "Pot classique arrondi.",                   Theme::TextDisabled } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
     inline const char* label(FormePot v) { return get(v).label.c_str(); }
@@ -462,12 +511,12 @@ namespace EnumInfo {
     inline const EnumMetadata& get(TypePot v) {
         using T = TypePot;
         static const std::unordered_map<T, EnumMetadata> map {
-            { T::TERRE_CUITE,        { "Terre cuite",        "Poreux, favorise l'aération des racines.",    Palette::BrunClair      } },
-            { T::PLASTIQUE,          { "Plastique",          "Garde l'humidité plus longtemps.",            Palette::BleuDoux } },
-            { T::CERAMIQUE_EMAILLEE, { "Céramique émaillée", "Esthétique et imperméable.",                  Palette::VertPale  } },
-            { T::GEOTEXTILE,         { "Géotextile",         "Excellente oxygénation (Air-Pruning).",       Palette::GrisClair} },
-            { T::VERRE,              { "Verre",              "Pour terrariums ou bouturage à l'eau.",       Palette::BleuCiel      } },
-            { T::BOIS,               { "Bois",               "Isolant naturel, aspect rustique.",           Palette::Brun    } }
+            { T::TERRE_CUITE,        { "Terre cuite",        "Poreux, favorise l'aération des racines.",     Theme::darken(Theme::Amber, 0.5f) } },
+            { T::PLASTIQUE,          { "Plastique",          "Garde l'humidité plus longtemps.",             Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { T::CERAMIQUE_EMAILLEE, { "Céramique émaillée", "Esthétique et imperméable.",                   Theme::TextSecondary } },
+            { T::GEOTEXTILE,         { "Géotextile",         "Excellente oxygénation (Air-Pruning).",        Theme::TextDisabled } },
+            { T::VERRE,              { "Verre",              "Pour terrariums ou bouturage à l'eau.",        Theme::InfoBlue } },
+            { T::BOIS,               { "Bois",               "Isolant naturel, aspect rustique.",            Theme::darken(Theme::WarningOrange, 0.5f) } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -477,9 +526,9 @@ namespace EnumInfo {
     inline const EnumMetadata& get(profondeurPot v) {
         using P = profondeurPot;
         static const std::unordered_map<P, EnumMetadata> map {
-            { P::FAIBLE,   { "Faible",   "Moins de 20 cm de profondeur.",           Palette::VertDoux  } },
-            { P::MOYEN,    { "Moyen",    "Entre 20 et 40 cm de profondeur.",        Palette::VertVif   } },
-            { P::PROFOND,  { "Profond",  "Plus de 40 cm de profondeur.",            Palette::BleuDoux  } }
+            { P::FAIBLE,   { "Faible",   "Moins de 20 cm de profondeur.",            Theme::PlantMid } },
+            { P::MOYEN,    { "Moyen",    "Entre 20 et 40 cm de profondeur.",         Theme::PlantGreen } },
+            { P::PROFOND,  { "Profond",  "Plus de 40 cm de profondeur.",             Theme::withAlpha(Theme::InfoBlue, 0.8f) } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -489,10 +538,10 @@ namespace EnumInfo {
     inline const EnumMetadata& get(LargeurPot v) {
         using L = LargeurPot;
         static const std::unordered_map<L, EnumMetadata> map {
-            { L::ETROIT,      { "Étroit",      "Moins de 20 cm de largeur.",         Palette::VertDoux  } },
-            { L::MOYEN,       { "Moyen",       "Entre 20 et 40 cm de largeur.",      Palette::VertVif   } },
-            { L::LARGE,       { "Large",       "Entre 40 et 60 cm de largeur.",      Palette::BleuDoux  } },
-            { L::TRES_LARGE,  { "Très large",   "Plus de 60 cm de largeur.",         Palette::BleuCiel  } }
+            { L::ETROIT,      { "Étroit",      "Moins de 20 cm de largeur.",         Theme::PlantMid } },
+            { L::MOYEN,       { "Moyen",       "Entre 20 et 40 cm de largeur.",      Theme::PlantGreen } },
+            { L::LARGE,       { "Large",       "Entre 40 et 60 cm de largeur.",      Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { L::TRES_LARGE,  { "Très large",  "Plus de 60 cm de largeur.",          Theme::InfoBlue } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -502,10 +551,10 @@ namespace EnumInfo {
     inline const EnumMetadata& get(FrequenceRempotage v) {
         using F = FrequenceRempotage;
         static const std::unordered_map<F, EnumMetadata> map {
-            { F::FREQUENT,   { "Fréquent",   "Rempotage recommandé tous les 6 mois.",    Palette::Rouge     } },
-            { F::ANNUEL,     { "Annuel",     "Rempotage recommandé chaque année.",       Palette::Orange    } },
-            { F::BI_ANNUEL,  { "Bi-annuel",  "Rempotage recommandé tous les 2 ans.",     Palette::VertDoux  } },
-            { F::RARE,       { "Rare",       "Rempotage peu fréquent, tous les 3-5 ans.",Palette::VertVif   } }
+            { F::FREQUENT,   { "Fréquent",   "Rempotage recommandé tous les 6 mois.",    Theme::DangerRed } },
+            { F::ANNUEL,     { "Annuel",     "Rempotage recommandé chaque année.",       Theme::WarningOrange } },
+            { F::BI_ANNUEL,  { "Bi-annuel",  "Rempotage recommandé tous les 2 ans.",     Theme::PlantMid } },
+            { F::RARE,       { "Rare",       "Rempotage peu fréquent, tous les 3-5 ans.",Theme::PlantGreen } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -515,9 +564,9 @@ namespace EnumInfo {
     inline const EnumMetadata& get(SensibiliteRempotage v) {
         using S = SensibiliteRempotage;
         static const std::unordered_map<S, EnumMetadata> map {
-            { S::FAIBLE,     { "Faible",     "Plante robuste, supporte bien le rempotage.",   Palette::VertVif   } },
-            { S::MOYENNE,    { "Moyenne",    "Plante modérément sensible, rempotage à faire avec précaution.", Palette::VertDoux  } },
-            { S::ELEVEE,     { "Élevée",     "Plante très sensible, rempotage à éviter ou à faire très délicatement.", Palette::Rouge     } }
+            { S::FAIBLE,     { "Faible",     "Plante robuste, supporte bien le rempotage.",   Theme::PlantGreen } },
+            { S::MOYENNE,    { "Moyenne",    "Plante modérément sensible, rempotage à faire avec précaution.", Theme::PlantMid } },
+            { S::ELEVEE,     { "Élevée",     "Plante très sensible, rempotage à éviter ou à faire très délicatement.", Theme::DangerRed } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -527,10 +576,10 @@ namespace EnumInfo {
     inline const EnumMetadata& get(BesoinsDrainage v) {
         using B = BesoinsDrainage;
         static const std::unordered_map<B, EnumMetadata> map {
-            { B::FAIBLE,     { "Faible",     "Plante tolérante à un drainage limité.",   Palette::VertDoux  } },
-            { B::MOYEN,      { "Moyen",      "Plante nécessitant un drainage modéré.",   Palette::VertVif   } },
-            { B::ELEVEE,     { "Élevé",      "Plante nécessitant un bon drainage.",      Palette::BleuDoux  } },
-            { B::ESSENTIEL,  { "Essentiel",  "Plante nécessitant un drainage optimal.",  Palette::Rouge     } }
+            { B::FAIBLE,     { "Faible",     "Plante tolérante à un drainage limité.",   Theme::PlantMid } },
+            { B::MOYEN,      { "Moyen",      "Plante nécessitant un drainage modéré.",   Theme::PlantGreen } },
+            { B::ELEVEE,     { "Élevé",      "Plante nécessitant un bon drainage.",      Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { B::ESSENTIEL,  { "Essentiel",  "Plante nécessitant un drainage optimal.",  Theme::DangerRed } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -555,12 +604,12 @@ namespace EnumInfo {
     inline const EnumMetadata& get(TauxReussite v) {
         using T = TauxReussite;
         static const std::unordered_map<T, EnumMetadata> map {
-            { T::TRES_ELEVE, { "Très élevé", "Réussit dans presque tous les cas, même pour les débutants.",  Palette::VertVif   } },
-            { T::ELEVE,      { "Élevé",      "Bonne probabilité de succès avec des conditions correctes.",   Palette::VertDoux  } },
-            { T::BON,        { "Bon",        "Réussit bien en suivant les étapes recommandées.",              Palette::VertPale  } },
-            { T::MOYEN,      { "Moyen",      "Demande de la patience, plusieurs tentatives parfois utiles.",  Palette::OrangeDoux} },
-            { T::VARIABLE,   { "Variable",   "Résultats inégaux selon la plante et la saison.",               Palette::Jaune     } },
-            { T::FAIBLE,     { "Faible",     "Technique délicate, taux d'échec élevé, réservé aux experts.", Palette::Rouge     } }
+            { T::TRES_ELEVE, { "Très élevé", "Réussit dans presque tous les cas, même pour les débutants.",  Theme::PlantGreen } },
+            { T::ELEVE,      { "Élevé",      "Bonne probabilité de succès avec des conditions correctes.",   Theme::PlantMid } },
+            { T::BON,        { "Bon",        "Réussit bien en suivant les étapes recommandées.",             Theme::TextSecondary } },
+            { T::MOYEN,      { "Moyen",      "Demande de la patience, plusieurs tentatives parfois utiles.",  Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { T::VARIABLE,   { "Variable",   "Résultats inégaux selon la plante et la saison.",              Theme::Amber } },
+            { T::FAIBLE,     { "Faible",     "Technique délicate, taux d'échec élevé, réservé aux experts.", Theme::DangerRed } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -571,11 +620,11 @@ namespace EnumInfo {
     inline const EnumMetadata& get(TypeTige v) {
         using T = TypeTige;
         static const std::unordered_map<T, EnumMetadata> map {
-            { T::HERBACEE,      { "Herbacée",      "Tige souple et verte, enracinement rapide (1-3 sem).",      Palette::VertVif   } },
-            { T::SEMI_LIGNEUSE, { "Semi-ligneuse", "Tige partiellement aoûtée, enracinement moyen (1-2 mois).", Palette::VertDoux  } },
-            { T::LIGNEUSE,      { "Ligneuse",      "Bois dur dormant, enracinement lent (2-4 mois).",           Palette::Brun      } },
-            { T::FEUILLE,       { "Feuille",       "Propagation par feuille entière, sans tige.",               Palette::VertPale  } },
-            { T::RACINE,        { "Racine",        "Bouture de racine, technique hivernale spécialisée.",       Palette::BrunClair } }
+            { T::HERBACEE,      { "Herbacée",      "Tige souple et verte, enracinement rapide (1-3 sem).",       Theme::PlantGreen } },
+            { T::SEMI_LIGNEUSE, { "Semi-ligneuse", "Tige partiellement aoûtée, enracinement moyen (1-2 mois).",  Theme::PlantMid } },
+            { T::LIGNEUSE,      { "Ligneuse",      "Bois dur dormant, enracinement lent (2-4 mois).",            Theme::darken(Theme::WarningOrange, 0.5f) } },
+            { T::FEUILLE,       { "Feuille",       "Propagation par feuille entière, sans tige.",                Theme::TextSecondary } },
+            { T::RACINE,        { "Racine",        "Bouture de racine, technique hivernale spécialisée.",        Theme::darken(Theme::Amber, 0.5f) } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -586,9 +635,9 @@ namespace EnumInfo {
     inline const EnumMetadata& get(HormoneBouturage v) {
         using H = HormoneBouturage;
         static const std::unordered_map<H, EnumMetadata> map {
-            { H::NON,        { "Non",         "Hormone inutile, peut même nuire à cette espèce.",            Palette::VertPale  } },
-            { H::OPTIONNEL,  { "Optionnel",   "Améliore légèrement le résultat, non indispensable.",         Palette::OrangeDoux} },
-            { H::RECOMMANDE, { "Recommandé",  "Augmente significativement le taux de réussite.",             Palette::Orange    } }
+            { H::NON,        { "Non",         "Hormone inutile, peut même nuire à cette espèce.",             Theme::TextSecondary } },
+            { H::OPTIONNEL,  { "Optionnel",   "Améliore légèrement le résultat, non indispensable.",          Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { H::RECOMMANDE, { "Recommandé",  "Augmente significativement le taux de réussite.",              Theme::WarningOrange } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -599,10 +648,10 @@ namespace EnumInfo {
     inline const EnumMetadata& get(HumiditeBouture v) {
         using H = HumiditeBouture;
         static const std::unordered_map<H, EnumMetadata> map {
-            { H::ELEVEE,   { "Élevée",   "Brumisation fréquente ou mini-serre recommandée.",       Palette::BleuCiel  } },
-            { H::MOYENNE,  { "Moyenne",  "Arrosages réguliers, substrat légèrement humide.",       Palette::BleuDoux  } },
-            { H::FAIBLE,   { "Faible",   "Substrat quasi-sec, arrosage très occasionnel.",         Palette::Sable     } },
-            { H::IMMERGEE, { "Immergée", "Tige plongée directement dans l'eau, changée 2×/sem.",   Palette::BleuCiel  } }
+            { H::ELEVEE,   { "Élevée",   "Brumisation fréquente ou mini-serre recommandée.",        Theme::InfoBlue } },
+            { H::MOYENNE,  { "Moyenne",  "Arrosages réguliers, substrat légèrement humide.",        Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { H::FAIBLE,   { "Faible",   "Substrat quasi-sec, arrosage très occasionnel.",          Theme::withAlpha(Theme::Amber, 0.7f) } },
+            { H::IMMERGEE, { "Immergée", "Tige plongée directement dans l'eau, changée 2×/sem.",    Theme::InfoBlue } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -613,11 +662,11 @@ namespace EnumInfo {
     inline const EnumMetadata& get(SubstratBouture v) {
         using S = SubstratBouture;
         static const std::unordered_map<S, EnumMetadata> map {
-            { S::EAU,           { "Eau",            "Verre d'eau claire, renouveler tous les 2-3 jours.",         Palette::BleuCiel  } },
-            { S::LEGER,         { "Léger",          "Terreau fin ou terreau de semis peu compacté.",              Palette::VertPale  } },
-            { S::LEGER_DRAINANT,{ "Léger drainant", "Mélange terreau + perlite (50/50) ou vermiculite.",         Palette::VertDoux  } },
-            { S::TRES_DRAINANT, { "Très drainant",  "Majoritairement sable horticole ou perlite (70%+).",        Palette::Sable     } },
-            { S::MINERAL,       { "Minéral",        "Sable grossier pur ou pouzzolane, sans matière organique.", Palette::Gris      } }
+            { S::EAU,            { "Eau",            "Verre d'eau claire, renouveler tous les 2-3 jours.",         Theme::InfoBlue } },
+            { S::LEGER,          { "Léger",          "Terreau fin ou terreau de semis peu compacté.",              Theme::TextSecondary } },
+            { S::LEGER_DRAINANT, { "Léger drainant", "Mélange terreau + perlite (50/50) ou vermiculite.",          Theme::PlantMid } },
+            { S::TRES_DRAINANT,  { "Très drainant",  "Majoritairement sable horticole ou perlite (70%+).",         Theme::withAlpha(Theme::Amber, 0.7f) } },
+            { S::MINERAL,        { "Minéral",        "Sable grossier pur ou pouzzolane, sans matière organique.",  Theme::TextMuted } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -627,22 +676,22 @@ namespace EnumInfo {
     inline const EnumMetadata& get(EtapeBouture v) {
         using E = EtapeBouture;
         static const std::unordered_map<E, EnumMetadata> map {
-            { E::COUPER_SOUS_NOEUD,             { "Couper sous nœud",           "Faire une coupe nette juste en dessous d'un nœud pour favoriser l'enracinement.",                      Palette::VertVif   } },
-            { E::RETRAIT_FEUILLES_BASSES,       { "Retrait feuilles basses",    "Enlever les feuilles proches de la base pour éviter la pourriture.",                                   Palette::VertDoux  } },
-            { E::PLANTER_SUBSTRAT,              { "Planter substrat",           "Enfoncer la tige dans le substrat jusqu'à au moins 2-3 cm de profondeur.",                             Palette::BleuDoux  } },
-            { E::PLACER_LUMIERE_INDIRECTE,      { "Placer lumière indirecte",   "Éviter la lumière directe du soleil qui peut dessécher la bouture.",                                   Palette::BleuCiel  } },
-            { E::PRELEVER_TIGE_SEMI_RIGIDE,     { "Prélever tige semi-rigide",  "Utiliser une tige semi-ligneuse pour un meilleur taux de réussite.",                                   Palette::Brun      } },
-            { E::ARROSAGE_LEGER,                { "Arrosage léger",             "Maintenir le substrat légèrement humide sans le détremper.",                                           Palette::Sable     } },
-            { E::COUPER_BOIS_DORMANT,           { "Couper bois dormant",        "Utiliser une tige ligneuse prélevée en période de dormance pour certaines espèces.",                   Palette::BrunClair } },
-            { E::PLANTER_ENTERRES,              { "Planter enterrés",           "Enfouir une partie de la tige sous le substrat pour favoriser l'enracinement.",                        Palette::VertPale  } },
-            { E::RETIRER_FEUILLES_EAU,          { "Retirer feuilles eau",       "Enlever les feuilles immergées pour éviter la pourriture dans les boutures à l'eau.",                  Palette::BleuCiel  } },
-            { E::CHANGER_EAU_REGULIEREMENT,     { "Changer eau régulièrement",  "Renouveler l'eau tous les 2-3 jours pour les boutures à l'eau afin d'éviter les algues.",              Palette::BleuDoux  } },
-            { E::PRELEVER_FEUILLE,              { "Prélever feuille",           "Bouturer à partir d'une feuille entière pour les espèces qui le permettent.",                          Palette::VertPale  } },
-            { E::SECHAGE,                       { "Séchage",                    "Laisser sécher la coupe à l'air libre pendant quelques heures avant de planter.",                      Palette::Sable     } },
-            { E::POSER_SUBSTRAT,                { "Poser substrat",             "Placer la bouture sur le substrat sans l'enfoncer pour les espèces sensibles.",                        Palette::VertDoux  } },
-            { E::COUPER_RACINE,                 { "Couper racine",              "Tailler légèrement les racines avant de rempoter pour stimuler la croissance.",                        Palette::Brun      } },
-            { E::PLANTER_HORIZONTAL,            { "Planter horizontal",         "Placer la tige à l'horizontale sous le substrat pour favoriser l'apparition de nouvelles pousses.",    Palette::VertVif   } },
-            { E::COUVRIR,                       { "Couvrir",                    "Recouvrir la bouture d'un sac plastique ou d'une mini-serre pour maintenir l'humidité.",               Palette::BleuCiel  } }
+            { E::COUPER_SOUS_NOEUD,             { "Couper sous nœud",           "Faire une coupe nette juste en dessous d'un nœud pour favoriser l'enracinement.",                       Theme::PlantGreen } },
+            { E::RETRAIT_FEUILLES_BASSES,       { "Retrait feuilles basses",    "Enlever les feuilles proches de la base pour éviter la pourriture.",                                    Theme::PlantMid } },
+            { E::PLANTER_SUBSTRAT,              { "Planter substrat",           "Enfoncer la tige dans le substrat jusqu'à au moins 2-3 cm de profondeur.",                              Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { E::PLACER_LUMIERE_INDIRECTE,      { "Placer lumière indirecte",   "Éviter la lumière directe du soleil qui peut dessécher la bouture.",                                    Theme::InfoBlue } },
+            { E::PRELEVER_TIGE_SEMI_RIGIDE,     { "Prélever tige semi-rigide",  "Utiliser une tige semi-ligneuse pour un meilleur taux de réussite.",                                    Theme::darken(Theme::WarningOrange, 0.5f) } },
+            { E::ARROSAGE_LEGER,                { "Arrosage léger",             "Maintenir le substrat légèrement humide sans le détremper.",                                            Theme::withAlpha(Theme::Amber, 0.7f) } },
+            { E::COUPER_BOIS_DORMANT,           { "Couper bois dormant",        "Utiliser une tige ligneuse prélevée en période de dormance pour certaines espèces.",                    Theme::darken(Theme::Amber, 0.5f) } },
+            { E::PLANTER_ENTERRES,              { "Planter enterrés",           "Enfouir une partie de la tige sous le substrat pour favoriser l'enracinement.",                         Theme::TextSecondary } },
+            { E::RETIRER_FEUILLES_EAU,          { "Retirer feuilles eau",       "Enlever les feuilles immergées pour éviter la pourriture dans les boutures à l'eau.",                   Theme::InfoBlue } },
+            { E::CHANGER_EAU_REGULIEREMENT,     { "Changer eau régulièrement",  "Renouveler l'eau tous les 2-3 jours pour les boutures à l'eau afin d'éviter les algues.",               Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { E::PRELEVER_FEUILLE,              { "Prélever feuille",           "Bouturer à partir d'une feuille entière pour les espèces qui le permettent.",                           Theme::TextSecondary } },
+            { E::SECHAGE,                       { "Séchage",                    "Laisser sécher la coupe à l'air libre pendant quelques heures avant de planter.",                       Theme::withAlpha(Theme::Amber, 0.7f) } },
+            { E::POSER_SUBSTRAT,                { "Poser substrat",             "Placer la bouture sur le substrat sans l'enfoncer pour les espèces sensibles.",                         Theme::PlantMid } },
+            { E::COUPER_RACINE,                 { "Couper racine",              "Tailler légèrement les racines avant de rempoter pour stimuler la croissance.",                         Theme::darken(Theme::WarningOrange, 0.5f) } },
+            { E::PLANTER_HORIZONTAL,            { "Planter horizontal",         "Placer la tige à l'horizontale sous le substrat pour favoriser l'apparition de nouvelles pousses.",     Theme::PlantGreen } },
+            { E::COUVRIR,                       { "Couvrir",                    "Recouvrir la bouture d'un sac plastique ou d'une mini-serre pour maintenir l'humidité.",                Theme::InfoBlue } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -679,6 +728,62 @@ namespace EnumInfo {
         auto it = m.find(s); return it != m.end() ? it->second : Saison::INCONNU;
     }
 
+    inline Rusticite parseRusticite(const std::string& s) {
+        static const std::unordered_map<std::string, Rusticite> m {
+            {"RUSTIQUE", Rusticite::RUSTIQUE}, {"SEMI_RUSTIQUE", Rusticite::SEMI_RUSTIQUE}, {"FRAGILE", Rusticite::FRAGILE}};
+        auto it = m.find(s); return it != m.end() ? it->second : Rusticite::INCONNU;
+    }
+
+    inline ExpositionSoleil parseExpositionSoleil(const std::string& s) {
+        static const std::unordered_map<std::string, ExpositionSoleil> m {
+            {"PLEIN_SOLEIL", ExpositionSoleil::PLEIN_SOLEIL}, {"MI_OMBRE", ExpositionSoleil::MI_OMBRE}};
+        auto it = m.find(s); return it != m.end() ? it->second : ExpositionSoleil::INCONNU;
+    }
+
+    inline ExpositionVent parseExpositionVent(const std::string& s){
+        static const std::unordered_map<std::string, ExpositionVent> m {
+            {"MODERE", ExpositionVent::MODERE}, {"ABRITE", ExpositionVent::ABRITE}};
+        auto it = m.find(s); return it != m.end() ? it->second : ExpositionVent::INCONNU;
+    }
+
+    inline VitesseCroissance parseVitesseCroissance(const std::string& s) {
+        static const std::unordered_map<std::string, VitesseCroissance> m {
+            {"Lente", VitesseCroissance::LENTE}, { "Modérée", VitesseCroissance::MODEREE}, 
+            { "Rapide", VitesseCroissance::RAPIDE}, { "Très rapide", VitesseCroissance::TRES_RAPIDE}};
+        auto it = m.find(s); return it != m.end() ? it->second : VitesseCroissance::INCONNU;
+    }
+
+    inline ToleranceSecheresse parseToleranceSecheresse(const std::string& s) {
+        static const std::unordered_map<std::string, ToleranceSecheresse> m {
+            {"Excellente", ToleranceSecheresse::EXCELLENTE}, {"Bonne", ToleranceSecheresse::BONNE}, {"Moyenne", ToleranceSecheresse::MOYENNE},
+            {"Faible", ToleranceSecheresse::FAIBLE}, {"Très faible", ToleranceSecheresse::TRES_FAIBLE}};
+        auto it = m.find(s); return it != m.end() ? it->second : ToleranceSecheresse::INCONNU;
+    }
+
+    inline SensibiliteEau parseSensibiliteEau(const std::string& s) {
+        static const std::unordered_map<std::string, SensibiliteEau> m {
+            {"Très élevée", SensibiliteEau::TRES_ELEVEE}, {"Élevée", SensibiliteEau::ELEVEE}, 
+            {"Moyenne", SensibiliteEau::MOYENNE}, {"Faible", SensibiliteEau::FAIBLE}};
+        auto it = m.find(s); return it != m.end() ? it->second : SensibiliteEau::INCONNU;
+    }
+
+    inline TypeFeuillage parseTypeFeuillage(const std::string& s) {
+        static const std::unordered_map<std::string, TypeFeuillage> m {
+            {"Persistant", TypeFeuillage::PERSISTANT}, {"Caduc", TypeFeuillage::CADUC}, {"Caduc (perd ses feuilles en hiver)", TypeFeuillage::CADUC}, 
+            {"Caduc (disparaît totalement en hiver)", TypeFeuillage::CADUC}, {"Semi-persistant", TypeFeuillage::SEMI_PERSISTANT}, 
+            {"Caduc à semi-persistant", TypeFeuillage::SEMI_PERSISTANT}, {"Persistant à semi-persistant", TypeFeuillage::SEMI_PERSISTANT},
+            {"Annuel", TypeFeuillage::ANNUEL}, {"Bisannuel", TypeFeuillage::BISANNUEL}, {"Bisannuel (cultivé comme annuel)", TypeFeuillage::BISANNUEL}};
+        auto it = m.find(s); return it != m.end() ? it->second : TypeFeuillage::INCONNU;
+    }
+
+    inline TypeBouture parseTypeBouture(const std::string& s) {
+        static const std::unordered_map<std::string, TypeBouture> m {
+            {"BOUTURE_HERBACEE", TypeBouture::BOUTURE_HERBACEE}, {"BOUTURE_SEMI_LIGNEUSE", TypeBouture::BOUTURE_SEMI_LIGNEUSE}, 
+            {"BOUTURE_LIGNEUSE", TypeBouture::BOUTURE_LIGNEUSE}, {"BOUTURE_EAU", TypeBouture::BOUTURE_EAU}, 
+            {"BOUTURE_FEUILLE", TypeBouture::BOUTURE_FEUILLE}, {"BOUTURE_RACINE", TypeBouture::BOUTURE_RACINE}};
+        auto it = m.find(s); return it != m.end() ? it->second : TypeBouture::INCONNU;
+    }
+
     // --- SOLS.JSON (Nouveaux parsers générés) ---
     inline TypeSol typeSolFromString(const std::string& s) {
         static const std::unordered_map<std::string, TypeSol> m {
@@ -697,6 +802,13 @@ namespace EnumInfo {
         auto it = m.find(s); return it != m.end() ? it->second : TextureSol::INCONNU;
     }
 
+    inline DensiteSol parseDensite(const std::string& s){
+        static const std::unordered_map<std::string, DensiteSol> m {
+            {"TRES_LEGERE", DensiteSol::TRES_LEGERE}, {"LEGERE", DensiteSol::LEGERE}, {"MOYENNE", DensiteSol::MOYENNE},
+            {"LOURDE", DensiteSol::LOURDE}, {"TRES_LOURDE", DensiteSol::TRES_LOURDE}};
+        auto it = m.find(s); return it!= m.end() ? it->second : DensiteSol::INCONNU;
+    }
+
     inline DrainageSol parseDrainage(const std::string& s) {
         static const std::unordered_map<std::string, DrainageSol> m {
             {"MOYEN", DrainageSol::MOYEN}, {"EXCELLENT", DrainageSol::EXCELLENT}, {"BON", DrainageSol::BON},
@@ -704,7 +816,7 @@ namespace EnumInfo {
         auto it = m.find(s); return it != m.end() ? it->second : DrainageSol::INCONNU;
     }
 
-    inline RetentionEau parseRetention(const std::string& s) {
+    inline RetentionEau parseRetentionEau(const std::string& s) {
         static const std::unordered_map<std::string, RetentionEau> m {
             {"MOYENNE", RetentionEau::MOYENNE}, {"FAIBLE", RetentionEau::FAIBLE}, 
             {"BONNE", RetentionEau::BONNE}, {"TRES_FORTE", RetentionEau::TRES_FORTE}};
@@ -730,6 +842,13 @@ namespace EnumInfo {
             {"MOYENNE", AerationSol::MOYENNE}, {"EXCELLENTE", AerationSol::EXCELLENTE}, {"BONNE", AerationSol::BONNE}, 
             {"TRES_ELEVEE", AerationSol::TRES_ELEVEE}, {"TRES_FAIBLE", AerationSol::TRES_FAIBLE}};
         auto it = m.find(s); return it != m.end() ? it->second : AerationSol::INCONNU;
+    }
+
+    inline tamponPh parseTamponPh(const std::string& s) {
+        static const std::unordered_map<std::string, tamponPh> m {
+            {"TRES_FORT", tamponPh::TRES_FORT}, {"FORT", tamponPh::FORT}, {"MOYEN", tamponPh::MOYEN},
+            {"FAIBLE", tamponPh::FAIBLE}, {"TRES_FAIBLE", tamponPh::TRES_FAIBLE}};
+        auto it = m.find(s); return it != m.end() ? it->second : tamponPh::INCONNU;
     }
 
     inline VieMicrobienne parseVieMicrobienne(const std::string& s) {

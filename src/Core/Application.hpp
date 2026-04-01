@@ -3,7 +3,7 @@
 #include "StateMachine.hpp"
 #include "VFX/BackgroundEngine.hpp"
 #include "States/StateMainMenu.hpp"
-#include "Services/DatabaseManager.hpp"
+#include "Services/DataBaseManager.hpp"
 #include "Data/UserBalcony.hpp"
 #include "Services/CalendarManager.hpp"
 

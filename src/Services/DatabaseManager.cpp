@@ -1,5 +1,6 @@
-#include "DatabaseManager.hpp"
+#include "Services/DataBaseManager.hpp"
 #include "DataLoader.hpp"
+#include "Data/EnumInfo.hpp" // Indispensable pour utiliser nos parseurs (typeSolFromString, etc.)
 #include <algorithm>
 #include <cctype>
 
@@ -10,13 +11,13 @@
 bool DatabaseManager::chargerTout(
     const std::string& cheminPlantes,
     const std::string& cheminSols,
-    const std::string& cheminPots,
+    const std::string& cheminRacines,
     const std::string& cheminBoutures)
 {
     bool ok = true;
     ok &= DataLoader::chargerPlantes (cheminPlantes,  m_plantes);
     ok &= DataLoader::chargerSols    (cheminSols,     m_sols);
-    ok &= DataLoader::chargerPots    (cheminPots,     m_pots);
+    ok &= DataLoader::chargerRacines (cheminRacines,  m_racines);
     ok &= DataLoader::chargerBoutures(cheminBoutures, m_boutures);
 
     if (ok) {
@@ -63,15 +64,25 @@ const Plant* DatabaseManager::findPlante(const std::string& nom) const {
     return nullptr;
 }
 
-const Soil* DatabaseManager::findSol(const std::string& typeSol) const {
-    for (const auto& s : m_sols)
-        if (s.typeSol == typeSol) return &s;
+const Soil* DatabaseManager::findSol(const std::string& typeSolStr) const {
+    // 1. On traduit le texte JSON en Enum C++
+    TypeSol targetEnum = EnumInfo::typeSolFromString(typeSolStr);
+    
+    // 2. On cherche dans la liste
+    for (const auto& s : m_sols) {
+        if (s.typeSol == targetEnum) {
+            return &s;
+        }
+    }
     return nullptr;
 }
 
-const Pot* DatabaseManager::findPot(const std::string& typeRacin) const {
-    for (const auto& p : m_pots)
-        if (p.typeRacinaire == typeRacin) return &p;
+const Racine* DatabaseManager::findRacine(const std::string& typeRacineStr) const {
+    TypeRacinaireEnum targetEnum = EnumInfo::parseTypeRacinaire(typeRacineStr);
+    
+    for (const auto& r : m_racines) {
+        if (r.typeRacinaire == targetEnum) return &r; 
+    }
     return nullptr;
 }
 
@@ -103,10 +114,19 @@ std::vector<const Plant*> DatabaseManager::filtrerParNom(const std::string& rech
     return result;
 }
 
-std::vector<const Plant*> DatabaseManager::filtrerParSol(const std::string& typeSol) const {
+std::vector<const Plant*> DatabaseManager::filtrerParSol(const std::string& typeSolStr) const {
     std::vector<const Plant*> result;
-    for (const auto& p : m_plantes)
-        if (p.solRecommande == typeSol || p.solAlternatif == typeSol)
+    
+    // 1. On transforme la chaîne passée en paramètre en énumération (ex: "TERREAU_UNIVERSEL" -> Enum::TERREAU_UNIVERSEL)
+    TypeSol targetSol = EnumInfo::typeSolFromString(typeSolStr);
+    
+    if (targetSol == TypeSol::INCONNU) return result; // Sécurité si le texte est invalide
+
+    // 2. On compare avec les nouveaux champs Enum de Plant !
+    for (const auto& p : m_plantes) {
+        if (p.solEnum == targetSol || p.solAlternatifEnum == targetSol) {
             result.push_back(&p);
+        }
+    }
     return result;
 }
