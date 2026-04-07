@@ -6,7 +6,11 @@
     "retention_eau": "MOYENNE",
     "richesse": "MOYENNE",
     "ph": {"min": 6.0, "max": 7.0},
-    "composition": ["TOURBE", "COMPOST", "FIBRES_VEGETALES"],
+    "composition": {
+      "TOURBE": 50,
+      "COMPOST": 30,
+      "FIBRES_VEGETALES": 20
+    },
     "utilisation": "GENERAL",
     "correction_ph": {
       "BAISSER": ["TERRE_BRUYERE", "SOUFRE", "EAU_PLUIE"],
@@ -32,7 +36,12 @@
     "retention_eau": "FAIBLE",
     "richesse": "FAIBLE",
     "ph": {"min": 7.0, "max": 8.5},
-    "composition": ["SABLE", "POUZZOLANE", "CALCAIRE"],
+    "composition": {
+      "COMPOST": 30,
+      "SABLE": 30,
+      "POUZZOLANE": 30,
+      "CALCAIRE": 10
+    },
     "utilisation": "AROMATIQUES_SECHES",
     "correction_ph": {
       "BAISSER": ["COMPOST", "TERREAU_UNIVERSEL"],
@@ -58,7 +67,10 @@
     "retention_eau": "BONNE",
     "richesse": "FAIBLE",
     "ph": {"min": 4.5, "max": 6.0},
-    "composition": ["MATIERE_ORGANIQUE_ACIDE"],
+    "composition": {
+      "MATIERE_ORGANIQUE_ACIDE": 80,
+      "SABLE": 20
+    },
     "utilisation": "ACIDOPHILES",
     "correction_ph": {
       "BAISSER": ["SOUFRE", "EAU_PLUIE"],
@@ -84,7 +96,11 @@
     "retention_eau": "BONNE",
     "richesse": "ELEVEE",
     "ph": {"min": 6.0, "max": 7.0},
-    "composition": ["COMPOST_ENRICHI", "ENGRAIS_ORGANIQUE"],
+    "composition": {
+      "COMPOST_ENRICHI": 70,
+      "TOURBE": 20,
+      "ENGRAIS_ORGANIQUE": 10
+    },
     "utilisation": "PLANTES_GOURMANDES",
     "correction_ph": {
       "BAISSER": ["TERRE_BRUYERE", "EAU_PLUIE"],
@@ -110,7 +126,11 @@
     "retention_eau": "MOYENNE",
     "richesse": "MOYENNE_ELEVEE",
     "ph": {"min": 5.5, "max": 6.5},
-    "composition": ["ECORCES", "SABLE", "TOURBE"],
+    "composition": {
+      "TOURBE": 40,
+      "ECORCES": 40,
+      "SABLE": 20
+    },
     "utilisation": "AGRUMES",
     "correction_ph": {
       "BAISSER": ["SOUFRE", "EAU_PLUIE"],
@@ -136,7 +156,10 @@
     "retention_eau": "BONNE",
     "richesse": "FAIBLE",
     "ph": {"min": 6.0, "max": 6.5},
-    "composition": ["TOURBE", "SABLE"],
+    "composition": {
+      "TOURBE": 70,
+      "SABLE": 30
+    },
     "utilisation": "SEMIS",
     "correction_ph": {
       "BAISSER": ["EAU_PLUIE"],
@@ -162,7 +185,9 @@
     "retention_eau": "TRES_FORTE",
     "richesse": "ELEVEE",
     "ph": {"min": 6.5, "max": 8.0},
-    "composition": ["ARGILE"],
+    "composition": {
+      "ARGILE": 100
+    },
     "utilisation": "PLEINE_TERRE",
     "correction_ph": {
       "BAISSER": ["SOUFRE", "COMPOST"],
@@ -188,7 +213,9 @@
     "retention_eau": "FAIBLE",
     "richesse": "FAIBLE",
     "ph": {"min": 5.5, "max": 7.0},
-    "composition": ["SABLE"],
+    "composition": {
+      "SABLE": 100
+    },
     "utilisation": "MEDITERRANEEN",
     "correction_ph": {
       "BAISSER": ["COMPOST", "TERRE_BRUYERE"],
@@ -214,7 +241,11 @@
     "retention_eau": "FAIBLE",
     "richesse": "FAIBLE",
     "ph": {"min": 5.5, "max": 6.5},
-    "composition": ["ECORCES", "FIBRES_VEGETALES", "POUZZOLANE"],
+    "composition": {
+      "ECORCES": 60,
+      "FIBRES_VEGETALES": 20,
+      "POUZZOLANE": 20
+    },
     "utilisation": "ORCHIDEES",
     "correction_ph": {
       "BAISSER": ["EAU_PLUIE"],
@@ -240,7 +271,11 @@
     "retention_eau": "FAIBLE",
     "richesse": "FAIBLE",
     "ph": {"min": 6.0, "max": 7.5},
-    "composition": ["SABLE", "POUZZOLANE", "COMPOST"],
+    "composition": {
+      "POUZZOLANE": 40,
+      "SABLE": 40,
+      "COMPOST": 20
+    },
     "utilisation": "CACTEES_SUCCULENTES",
     "correction_ph": {
       "BAISSER": ["SOUFRE"],

@@ -1,6 +1,6 @@
 #include "StateWiki.hpp"
 #include "Core/Application.hpp"
-#include "Services/DatabaseManager.hpp"
+#include "Services/DataBaseManager.hpp"
 #include "Data/EnumInfo.hpp"
 #include "UI/Widgets.hpp"
 #include <imgui.h>
@@ -364,6 +364,14 @@ void StateWiki::DrawPlantCalendar(const Plant& plant) const {
     constexpr float CELL_H = 28.f;
     static float monthHover[13] = {};
 
+    // Récupération du draw list pour dessiner directement sur l'écran
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    
+    // On récupère l'arrondi et la couleur de bordure de ton thème actuel
+    // pour que les cellules ressemblent exactement à tes anciennes ChildWindows
+    const float rounding = ImGui::GetStyle().ChildRounding;
+    const ImU32 borderColor = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyleColorVec4(ImGuiCol_Border));
+
     for (int mois = 1; mois <= 12; ++mois) {
         const auto& m = EnumInfo::getMois(mois);
 
@@ -378,27 +386,31 @@ void StateWiki::DrawPlantCalendar(const Plant& plant) const {
         else if (floraison)       { bgBase = { 0.75f, 0.25f, 0.45f, 0.7f }; txtColor = C::Titre; }
         else if (recolte)         { bgBase = { 0.12f, 0.45f, 0.22f, 0.7f }; txtColor = C::Titre; }
 
-        ImVec2 cellPos = ImGui::GetCursorScreenPos();
-        bool isHovered = ImGui::IsMouseHoveringRect(cellPos, { cellPos.x + CELL_W, cellPos.y + CELL_H });
+        // 1. Définition des coordonnées de la cellule
+        ImVec2 pMin = ImGui::GetCursorScreenPos();
+        ImVec2 pMax = { pMin.x + CELL_W, pMin.y + CELL_H };
             
+        // 2. Gestion de l'interaction (InvisibleButton remplace BeginChild)
+        char id[16]; std::snprintf(id, sizeof(id), "##cal%d", mois);
+        ImGui::InvisibleButton(id, { CELL_W, CELL_H });
+        bool isHovered = ImGui::IsItemHovered();
+
+        // 3. Calcul des animations
         monthHover[mois] = UI::Anim::StepSmooth(monthHover[mois], isHovered ? 1.f : 0.f, 12.f);
 
         const ImVec4 bgHoverColor = { std::min(1.f, bgBase.x+0.15f), std::min(1.f, bgBase.y+0.15f), std::min(1.f, bgBase.z+0.15f), std::min(1.f, bgBase.w+0.15f) };
         const ImVec4 bgFinal = UI::Anim::LerpColor(bgBase, bgHoverColor, monthHover[mois]);
-
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, bgFinal);
-        char id[16]; std::snprintf(id, sizeof(id), "##cal%d", mois);
-        ImGui::BeginChild(id, { CELL_W, CELL_H }, true, ImGuiWindowFlags_NoScrollbar);
-
-        ImGui::SetCursorPosX((CELL_W - ImGui::CalcTextSize(m.court).x) * 0.5f);
-        ImGui::SetCursorPosY((CELL_H - ImGui::GetTextLineHeight()) * 0.5f);
-
         const ImVec4 txtFinal = UI::Anim::LerpColor(txtColor, { 1.f, 1.f, 1.f, 1.f }, monthHover[mois] * 0.3f);
-        ImGui::TextColored(txtFinal, "%s", m.court);
 
-        ImGui::EndChild();
-        ImGui::PopStyleColor();
+        // 4. Rendu visuel (Fond, bordure, texte centré)
+        dl->AddRectFilled(pMin, pMax, ImGui::ColorConvertFloat4ToU32(bgFinal), rounding);
+        dl->AddRect(pMin, pMax, borderColor, rounding); // Ajout de la bordure
 
+        ImVec2 tSz = ImGui::CalcTextSize(m.court);
+        ImVec2 tPos = { pMin.x + (CELL_W - tSz.x) * 0.5f, pMin.y + (CELL_H - ImGui::GetTextLineHeight()) * 0.5f };
+        dl->AddText(tPos, ImGui::ColorConvertFloat4ToU32(txtFinal), m.court);
+
+        // 5. Tooltip
         if (isHovered) {
             std::string tip = m.long_;
             if (floraison) tip += "\nFloraison";
@@ -420,7 +432,7 @@ void StateWiki::DrawPlantCalendar(const Plant& plant) const {
 // ─────────────────────────────────────────────────────────────────────────────
 
 void StateWiki::DrawPlantRelations(const Plant& plant) {
-    UI::SectionAnimated("Plantes concernées", m_vineProgress);
+    UI::SectionAnimated("Sol & Bouture ", m_vineProgress);
     const DatabaseManager& db = m_app->getDatabase();
 
     const Soil* sol = db.findSol(plant.solEnum);
@@ -612,7 +624,7 @@ void StateWiki::DrawBoutureDetails(const Bouture& bouture) {
         if (bouture.longueurMin > 0) {
             ImGui::NewLine();
             char lgStr[32]; std::snprintf(lgStr, sizeof(lgStr), "%d – %d cm", bouture.longueurMin, bouture.longueurMax);
-            UI::InfoRow("Longueur coupe", lgStr);
+            UI::InfoRow("Longueur coupe", std::string(lgStr));
         }
         UI::InfoRow("Substrat", EnumInfo::get(bouture.substrat));
         UI::InfoRow("Hormone",  EnumInfo::get(bouture.hormoneBouturage));
@@ -621,8 +633,8 @@ void StateWiki::DrawBoutureDetails(const Bouture& bouture) {
         char tmpStr[48], enrStr[48];
         std::snprintf(tmpStr, sizeof(tmpStr), "%d – %d °C", bouture.temperatureMin, bouture.temperatureMax);
         std::snprintf(enrStr, sizeof(enrStr), "%d – %d jours", bouture.enracinementMin, bouture.enracinementMax);
-        UI::InfoRow("Température",  tmpStr);
-        UI::InfoRow("Enracinement", enrStr);
+        UI::InfoRow("Température",  std::string(tmpStr));
+        UI::InfoRow("Enracinement", std::string(enrStr));
     });
 
     UI::SectionAnimated("Plantes concernées", m_vineProgress);

@@ -5,7 +5,7 @@
 #include "UI/ColorTheme.hpp"
 #include "UI/Widgets.hpp"
 #include "Data/EnumInfo.hpp"
-#include "Services/DatabaseManager.hpp"
+#include "Services/DataBaseManager.hpp"
 #include "Core/Application.hpp"
 #include "Data/UserPlant.hpp"
 

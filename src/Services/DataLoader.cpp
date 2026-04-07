@@ -190,17 +190,17 @@ bool DataLoader::chargerPlantes(const std::string& chemin, std::vector<Plant>& o
         //  On split : bool = commence par "OUI", texte = tout le reste entre parenthèses
  
         {
-            const std::string tox = str(item, "toxicite_animaux");
-            p.toxiciteAnimaux = (tox.substr(0, 3) == "OUI");
- 
-            // Extraire la note entre parenthèses si présente
-            const auto debut = tox.find('(');
-            const auto fin   = tox.rfind(')');
-            if (debut != std::string::npos && fin != std::string::npos && fin > debut)
-                p.toxiciteNote = tox.substr(debut + 1, fin - debut - 1);
-            // Cas spéciaux sans parenthèses
-            else if (tox == "Sans danger (Pet-friendly)")
-                p.toxiciteNote = "Pet-friendly";
+            if (item.contains("toxicite_animaux")) {
+                const auto& toxNode = item["toxicite_animaux"];
+
+                // CAS 1 : C'est un vrai booléen dans le JSON (Nouveau format !)
+                if (toxNode.is_boolean()) {
+                    p.toxiciteAnimaux = toxNode.get<bool>();
+                    p.toxiciteNote = item.value("toxicite_note", ""); 
+                }
+            } else {
+                p.toxiciteAnimaux = false; // Par défaut si la clé n'existe pas
+            }
         }
  
         // ── Score ─────────────────────────────────────────────────────────────

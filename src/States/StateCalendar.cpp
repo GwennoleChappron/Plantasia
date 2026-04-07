@@ -1,6 +1,6 @@
 #include "StateCalendar.hpp"
 #include "Core/Application.hpp"
-#include "Services/DatabaseManager.hpp"
+#include "Services/DataBaseManager.hpp"
 #include "UI/ColorTheme.hpp"
 #include "UI/Widgets.hpp"
 #include "Data/EnumInfo.hpp"

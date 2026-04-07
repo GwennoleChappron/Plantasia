@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Data/EnumInfo.hpp"
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <cmath>
@@ -181,7 +182,6 @@ namespace UI {
         InfoRow(label, value ? "Oui" : "Non", value ? ImVec4{0.2f,0.8f,0.3f,1.f} : Theme::Muted, colOffset);
     }
 
-    // (Note : Si la surcharge avec EnumMetadata pose problème car EnumMetadata n'est pas défini ici, supprime cette ligne ou ajoute le #include correspondant)
     template <typename T>
     inline void InfoRow(const char* label, const T& meta, float colOffset = Theme::ColLabel) {
         InfoRow(label, meta.label.c_str(), meta.color, colOffset);
@@ -310,183 +310,219 @@ namespace UI {
         ImGui::Dummy({ 0.f, pixels }); 
     }
 
-   // ─────────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────────
     //  SectionAnimated — Liane AAA (Vent, Respiration, Souris & Spores)
     // ─────────────────────────────────────────────────────────────────────────────
-    inline void SectionAnimated(const char* title, float progress, bool isBlooming = false) {
+
+    // ── CONFIGURATION DE LA LIANE ──
+    struct VineStyle {
+        float frequenceX      = 40.f;   // Longueur d'onde de base
+        float amplitudeY      = 6.f;    // Hauteur de la vague
+        float epaisseurTige   = 1.5f;   // Épaisseur de la ligne
+        float tailleFeuille   = 6.5f;   // Longueur de la feuille (plus grande car c'est un polygone maintenant)
+        float ecartFeuille    = 8.f;    // Longueur du pétiole
+        float organicVariance = 1.f;   // Facteur de chaos
+        
+        ImVec4 couleurTige    = Theme::Muted;
+        ImVec4 couleurFeuille = Theme::Accent;
+    };
+
+    inline void SectionAnimated(const char* title, float progress, bool isBlooming = false, const VineStyle& style = VineStyle()) {
         ImGui::Spacing();
 
-        // 🌿 Animation légère du titre (respiration)
-        float t = ImGui::GetTime();
-        float breathe = 0.5f + 0.5f * sinf(t * 1.5f);
-        ImVec4 titleCol = ImLerp(Theme::Accent, ImVec4(0.4f, 1.0f, 0.5f, 1.f), breathe * 0.3f);
+        float t = (float)ImGui::GetTime();
 
-        ImGui::TextColored(titleCol, "%s", title);
+        // 🌿 Respiration du titre
+        float breathe = 0.5f + 0.2f * sinf(t * 1.5f);
+        ImVec4 titleCol = Anim::LerpColor(Theme::Accent, ImVec4(0.4f, 1.0f, 0.5f, 1.f), breathe * 0.3f);
 
-        // ── PARAMÈTRES ──
-        const float frequenceX    = 35.f;  
-        const float amplitudeY    = 8.f;   
-        const float epaisseurTige = 1.5f;  
-        const float tailleFeuille = 2.5f;  
-        const float ecartFeuille  = 4.f;   
-
-        const ImVec4 couleurTige    = Theme::Muted;
-        const ImVec4 couleurFeuille = Theme::Accent;
+        const char* displayEnd = ImGui::FindRenderedTextEnd(title);
+        ImGui::TextColored(titleCol, "%.*s", (int)(displayEnd - title), title);
 
         ImVec2 p = ImGui::GetCursorScreenPos();
         float fullWidth = ImGui::GetContentRegionAvail().x;
-
         float eased = Anim::EaseOut(progress);
         float currentWidth = fullWidth * eased;
 
+        if (currentWidth <= 1.0f) return;
+
         ImDrawList* dl = ImGui::GetWindowDrawList();
 
-        // 🖱️ Interaction Souris (Préparation)
         ImVec2 mousePos = ImGui::GetMousePos();
-        const float mouseRadius = 45.f; // Zone d'influence de la souris
+        const float mouseRadius = 45.f; 
+        const float mouseRadiusSq = mouseRadius * mouseRadius;
+        
+        float midY = p.y + style.amplitudeY * 0.5f;
 
-        // On agrandit encore un peu le clip rect pour laisser les spores monter
         dl->PushClipRect(
-            {p.x, p.y - amplitudeY - 20.f},
-            {p.x + currentWidth, p.y + amplitudeY * 2.f + 5.f},
+            {p.x, p.y - style.amplitudeY - 25.f},
+            {p.x + currentWidth, p.y + style.amplitudeY * 2.f + 15.f},
             true
         );
 
-        int segments = (int)(fullWidth / frequenceX) + 1;
-        float midY   = p.y + amplitudeY * 0.5f; 
+        // ── FONCTION MATHÉMATIQUE DE LA LIANE ──
+        auto evaluateVineY = [&](float x) {
+            float localX = x - p.x;
+            float wave1 = sinf(localX / (style.frequenceX * 0.5f) - t * 0.8f) * style.amplitudeY;
+            float wave2 = cosf(localX / (style.frequenceX * 0.25f) + t * 1.5f) * (style.amplitudeY * style.organicVariance);
+            float targetY = midY + wave1 + wave2;
 
-        // 🌬️ vent global
-        float wind = sinf(t * 0.8f) * 2.0f;
-
-        // ── TIGE (plus organique + animée) ──
-        dl->PathClear();
-        dl->PathLineTo({p.x, midY});
-
-        for (int i = 0; i < segments; ++i) {
-            float startX = p.x + i * frequenceX;
-            float endX   = startX + frequenceX;
-
-            // 🌊 variation dynamique
-            float phase = t * 1.2f + i * 0.4f;
-            float dynamicAmp = amplitudeY + sinf(phase) * 2.0f;
-
-            float ctrlY1 = (i % 2 == 0) ? p.y - dynamicAmp : p.y + dynamicAmp * 2.f;
-            float ctrlY2 = (i % 2 == 0) ? p.y + dynamicAmp * 2.f : p.y - dynamicAmp;
-
-            // 🌬️ décalage vent
-            float windOffset = wind * (i / (float)segments);
-
-            // 🖱️ Répulsion de la tige par la souris
-            float segCenterX = startX + frequenceX * 0.5f;
-            float distToMouse = hypotf(mousePos.x - segCenterX, mousePos.y - midY);
-            float mousePushY = 0.f;
-            if (distToMouse < mouseRadius) {
-                // Pousse la tige vers le bas si la souris est proche
-                mousePushY = (mouseRadius - distToMouse) * 0.3f; 
+            float dx = x - mousePos.x;
+            float dy = targetY - mousePos.y;
+            float distSq = dx * dx + dy * dy;
+            
+            if (distSq < mouseRadiusSq) {
+                float dist = sqrtf(distSq);
+                float force = (mouseRadius - dist) / mouseRadius;
+                targetY += (dy > 0 ? 1.f : -1.f) * force * 12.f; 
             }
-
-            dl->PathBezierCubicCurveTo(
-                {startX + frequenceX * 0.3f + windOffset, ctrlY1 + mousePushY},
-                {startX + frequenceX * 0.7f + windOffset, ctrlY2 + mousePushY},
-                {endX + windOffset, midY + mousePushY * 0.5f}
-            );
-        }
-
-        dl->PathStroke(ImGui::ColorConvertFloat4ToU32(couleurTige), 0, epaisseurTige);
-
-        // ── RNG stable ──
-        uint32_t rng_state = ImGui::GetID(title) + 12345;
-        auto randFloat = [&]() {
-            rng_state = rng_state * 1664525 + 1013904223;
-            return (float)rng_state / (float)0xFFFFFFFF;
+            return targetY;
         };
 
-        // ── FEUILLES / FLEURS / SPORES ──
-        for (int i = 0; i < segments; ++i) {
-            float growthThreshold = (i / (float)segments);
+        // ── 1. TRACÉ DE LA TIGE ──
+        dl->PathClear();
+        const float stepX = 4.0f; 
+        for (float x = p.x; x <= p.x + currentWidth; x += stepX) {
+            dl->PathLineTo({x, evaluateVineY(x)});
+        }
+        dl->PathLineTo({p.x + currentWidth, evaluateVineY(p.x + currentWidth)});
+        dl->PathStroke(ImGui::ColorConvertFloat4ToU32(style.couleurTige), 0, style.epaisseurTige);
 
-            // 🌱 croissance progressive
-            if (growthThreshold > eased) break;
 
-            float baseX = p.x + i * frequenceX + frequenceX * 0.5f;
-            float baseY = midY + ((i % 2 == 0) ? ecartFeuille : -ecartFeuille);
+        // ── HELPERS POUR LE DESSIN ORGANIQUE ──
+        
+        // 🍃 Dessiner une feuille orientée
+        auto drawLeaf = [&](float x, float y, float size, float angle, ImU32 color) {
+            float cosA = cosf(angle);
+            float sinA = sinf(angle);
 
-            float offsetX = (randFloat() - 0.5f) * (frequenceX * 0.6f);
-            float offsetY = (randFloat() - 0.5f) * (ecartFeuille * 1.5f);
+            // Création d'un polygone à 6 points pour une forme de feuille bien rebondie
+            // Base (0,0), pointe (size, 0)
+            auto transform = [&](float lx, float ly) {
+                return ImVec2(x + lx * cosA - ly * sinA, y + lx * sinA + ly * cosA);
+            };
 
-            float leafX = baseX + offsetX;
-            float leafY = baseY + offsetY;
+            ImVec2 poly[6] = {
+                transform(0.f, 0.f),                          // Base attachée au pétiole
+                transform(size * 0.3f, size * 0.35f),         // Renflement haut 1
+                transform(size * 0.7f, size * 0.2f),          // Affinement haut 2
+                transform(size, 0.f),                         // Pointe de la feuille
+                transform(size * 0.7f, -size * 0.2f),         // Affinement bas 2
+                transform(size * 0.3f, -size * 0.35f)         // Renflement bas 1
+            };
+            dl->AddConvexPolyFilled(poly, 6, color);
+        };
 
-            // 🌬️ vent local + micro jitter
-            float localWind = sinf(t * 2.0f + i) * 1.5f;
-            leafX += localWind;
+        // 🌸 Dessiner une vraie fleur à 5 pétales
+        auto drawFlower = [&](float cx, float cy, float size, ImU32 color, ImU32 centerColor) {
+            for(int j = 0; j < 5; j++) {
+                float a = j * (6.28318f / 5.0f) + t * 0.5f; // Légère rotation globale continue
+                float px = cx + cosf(a) * (size * 0.4f);
+                float py = cy + sinf(a) * (size * 0.4f);
+                dl->AddCircleFilled({px, py}, size * 0.45f, color);
+            }
+            dl->AddCircleFilled({cx, cy}, size * 0.3f, centerColor); // Cœur de la fleur
+        };
 
-            // 🖱️ Effet d'écartement au passage de la souris (parallaxe)
-            float distToMouse = hypotf(mousePos.x - leafX, mousePos.y - leafY);
-            if (distToMouse < mouseRadius) {
-                float force = (mouseRadius - distToMouse) / mouseRadius;
-                // Fuit la position de la souris
-                leafX += (leafX - mousePos.x) * force * 0.2f;
-                leafY += (leafY - mousePos.y) * force * 0.2f;
+
+        // ── 2. VÉGÉTATION & PÉTIOLES ──
+        uint32_t seed = ImGui::GetID(title);
+        uint32_t rng_flora = seed + 456;
+        auto getRand = [](uint32_t& state) {
+            state = state * 1664525 + 1013904223;
+            return (float)state / (float)0xFFFFFFFF;
+        };
+
+        float leafSpacing = style.frequenceX * 0.6f;
+        int numLeaves = (int)(currentWidth / leafSpacing);
+
+        for (int i = 0; i < numLeaves; ++i) {
+            float leafBaseX = p.x + i * leafSpacing;
+            float stemY = evaluateVineY(leafBaseX);
+
+            float offsetX = (getRand(rng_flora) - 0.5f) * (leafSpacing * 0.5f);
+            float offsetY = (i % 2 == 0) ? style.ecartFeuille : -style.ecartFeuille;
+            offsetY += (getRand(rng_flora) - 0.5f) * 4.f; 
+
+            float targetLeafX = leafBaseX + offsetX + style.ecartFeuille; // Éloigne la feuille sur l'axe X
+            float targetLeafY = stemY + offsetY;
+
+            // Parallaxe souris (vent interactif)
+            float ldx = mousePos.x - targetLeafX;
+            float ldy = mousePos.y - targetLeafY;
+            float lDistSq = ldx * ldx + ldy * ldy;
+            if (lDistSq < mouseRadiusSq) {
+                float lDist = sqrtf(lDistSq);
+                float force = (mouseRadius - lDist) / mouseRadius;
+                targetLeafX += (targetLeafX - mousePos.x) * force * 0.05f; 
+                targetLeafY += (targetLeafY - mousePos.y) * force * 0.05f;
             }
 
-            ImVec4 finalColor = couleurFeuille;
+            // Mouvement organique continu (vent)
+            float leafX = targetLeafX + sinf(t * 2.0f + i) * 2.0f;
+            float leafY = targetLeafY + cosf(t * 1.5f + i) * 1.0f;
 
-            // 🌿 respiration feuille
+            // 🌿 DESSIN DU PÉTIOLE (Lien Liane -> Base de la feuille)
+            // On calcule un point de contrôle pour courber la tige doucement vers le bas (gravité)
+            float cpX = leafBaseX + (leafX - leafBaseX) * 0.5f;
+            float cpY = stemY + (leafY - stemY) * 0.5f + 3.0f; // Le +3.0f crée l'effet "pendouillant"
+
+            dl->PathClear();
+            dl->PathLineTo({leafBaseX, stemY});
+            dl->PathBezierQuadraticCurveTo({cpX, cpY}, {leafX, leafY});
+            dl->PathStroke(ImGui::ColorConvertFloat4ToU32(style.couleurTige), 0, style.epaisseurTige * 0.6f);
+
+            // Calcul de l'angle de la feuille (elle pointe dans le prolongement de son pétiole)
+            float leafAngle = atan2f(leafY - cpY, leafX - cpX);
+
+            ImVec4 finalColor = style.couleurFeuille;
             float life = 0.8f + sinf(t * 3.0f + i) * 0.2f;
-            float finalSize = tailleFeuille * life * (0.8f + randFloat() * 0.4f);
+            float finalSize = style.tailleFeuille * life * (0.8f + getRand(rng_flora) * 0.4f);
 
             // 🌸 FLORAISON
             bool isFlower = false;
-            if (isBlooming && randFloat() < 0.35f) {
+            if (isBlooming && getRand(rng_flora) < 0.35f) {
                 isFlower = true;
-                float colorRng = randFloat();
+                float colorRng = getRand(rng_flora);
                 if (colorRng < 0.25f)      finalColor = { 0.95f, 0.45f, 0.65f, 1.f };
                 else if (colorRng < 0.50f) finalColor = { 0.95f, 0.85f, 0.25f, 1.f };
                 else if (colorRng < 0.75f) finalColor = { 0.40f, 0.75f, 0.95f, 1.f };
                 else                       finalColor = { 0.75f, 0.45f, 0.85f, 1.f };
 
-                finalSize *= 1.4f;
+                finalSize *= 1.2f;
                 
-                // ✨ SPORES / LUCIOLES (Uniquement sur les fleurs)
-                // On crée une petite particule qui s'échappe vers le haut et boucle
-                float sporeTime = t * (0.5f + randFloat() * 0.5f) + i; // Vitesse variable
-                float sporeYOffset = fmodf(sporeTime * 15.f, 25.f);    // Monte jusqu'à 25px puis reset
+                // Dessin de la vraie Fleur
+                ImU32 colFleur = ImGui::ColorConvertFloat4ToU32(finalColor);
+                ImU32 colCoeur = ImGui::ColorConvertFloat4ToU32({1.f, 0.9f, 0.4f, 1.f}); // Jaune pollen
+                drawFlower(leafX, leafY, finalSize, colFleur, colCoeur);
                 
-                // Opacité qui fade-out au fur et à mesure que ça monte
-                float sporeAlpha = 1.0f - (sporeYOffset / 25.f);
-                sporeAlpha *= sinf(sporeTime * 5.f) * 0.5f + 0.5f; // Clignotement
+                // ✨ SPORES
+                float sporeTime = t * (0.4f + getRand(rng_flora) * 0.4f) + i; 
+                float cycle = fmodf(sporeTime, 1.0f); 
+                float sporeYOffset = cycle * 25.f; 
+                float sporeX = leafX + sinf(sporeTime * 15.f) * 4.f; 
+                float baseAlpha = 4.0f * cycle * (1.0f - cycle);
+                float sporeAlpha = baseAlpha * (sinf(sporeTime * 30.f) * 0.3f + 0.7f); 
                 
                 if (sporeAlpha > 0.05f) {
-                    float sporeX = leafX + sinf(sporeTime * 3.f) * 5.f; // Dérive horizontale
-                    float sporeY = leafY - sporeYOffset;
                     ImVec4 sporeColor = { finalColor.x, finalColor.y, finalColor.z, sporeAlpha };
-                    dl->AddCircleFilled({sporeX, sporeY}, 1.0f, ImGui::ColorConvertFloat4ToU32(sporeColor));
+                    dl->AddCircleFilled({sporeX, leafY - sporeYOffset}, 1.2f, ImGui::ColorConvertFloat4ToU32(sporeColor));
                 }
-            }
-
-            dl->AddCircleFilled(
-                {leafX, leafY},
-                finalSize,
-                ImGui::ColorConvertFloat4ToU32(finalColor)
-            );
-
-            // 🌱 bourgeon secondaire animé
-            if (!isFlower && randFloat() < 0.40f) {
-                float subX = leafX + sinf(t * 4.0f + i) * 2.0f;
-                float subY = leafY + cosf(t * 3.0f + i) * 2.0f;
-                float subSize = finalSize * (0.4f + randFloat() * 0.3f);
-
-                dl->AddCircleFilled(
-                    {subX, subY},
-                    subSize,
-                    ImGui::ColorConvertFloat4ToU32(couleurFeuille)
-                );
+            } else {
+                // 🌿 Dessin de la vraie Feuille
+                drawLeaf(leafX, leafY, finalSize, leafAngle, ImGui::ColorConvertFloat4ToU32(finalColor));
+                
+                // 🌱 Bourgeon secondaire (Une petite feuille asymétrique)
+                if (getRand(rng_flora) < 0.40f) {
+                    float subX = leafX + cosf(leafAngle - 1.5f) * 2.f;
+                    float subY = leafY + sinf(leafAngle - 1.5f) * 2.f;
+                    drawLeaf(subX, subY, finalSize * 0.6f, leafAngle + 0.8f, ImGui::ColorConvertFloat4ToU32(style.couleurFeuille));
+                }
             }
         }
 
         dl->PopClipRect();
-
-        ImGui::Dummy({0.f, amplitudeY + tailleFeuille * 2.f + 6.f});
+        ImGui::Dummy({0.f, style.amplitudeY + style.tailleFeuille * 1.5f + 6.f});
     }
+
 } // namespace UI

@@ -7,7 +7,7 @@
     "forme_pot": "COLONNE",
     "materiaux": ["TERRE_CUITE", "GEOTEXTILE"],
     "plantes_exemples": ["CAROTTE", "LIVECHE", "CORIANDRE"],
-    "drainage": "ELEVEE",
+    "drainage": "IMPORTANT",
     "frequence_rempotage": "RARE",
     "sensibilite_rempotage": "ELEVEE"
   },
@@ -43,8 +43,8 @@
     "forme_pot": "BAC",
     "materiaux": ["TERRE_CUITE", "BOIS"],
     "plantes_exemples": ["ROMARIN", "LAURIER", "YUZU"],
-    "drainage": "ELEVEE",
-    "frequence_rempotage": "BI_ANNUEL",
+    "drainage": "TRES_IMPORTANT",
+    "frequence_rempotage": "TOUS_2_4_ANS",
     "sensibilite_rempotage": "MOYENNE"
   },
   {
