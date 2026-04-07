@@ -20,10 +20,10 @@ void StateBalconySim::onEnter() {
     m_sunGPU.init(m_cfg.width, m_cfg.height);
     
     for (const auto& p : m_app->getUserBalcony().getMesPlantes()) {
-        if (m_plantTextures.find(p.nom_espece) == m_plantTextures.end()) {
+        if (m_plantTextures.find(p.nomEspece) == m_plantTextures.end()) {
             sf::Texture tex;
-            tex.loadFromFile("assets/" + p.nom_espece + "_icon.png"); 
-            m_plantTextures[p.nom_espece] = tex;
+            tex.loadFromFile("assets/" + p.nomEspece + "_icon.png"); 
+            m_plantTextures[p.nomEspece] = tex;
         }
     }
 
@@ -135,10 +135,10 @@ void StateBalconySim::handleInput() {
     m_hoveredPlantIdx = -1;
     for (int i = (int)plantes.size() - 1; i >= 0; i--) {
         auto& p = plantes[i];
-        if (p.position_balcon.x >= 0.0f) {
-            float radius = std::max(CELL_PX * 0.4f, std::sqrt((float)p.volume_pot_actuel_L) * 2.0f);
-            float dx = worldPos.x - p.position_balcon.x;
-            float dy = worldPos.y - p.position_balcon.y;
+        if (p.positionBalcon.x >= 0.0f) {
+            float radius = std::max(CELL_PX * 0.4f, std::sqrt((float)p.volumePotActuel_L) * 2.0f);
+            float dx = worldPos.x - p.positionBalcon.x;
+            float dy = worldPos.y - p.positionBalcon.y;
             
             if ((dx * dx + dy * dy) <= (radius * radius)) {
                 m_hoveredPlantIdx = i; 
@@ -153,15 +153,15 @@ void StateBalconySim::handleInput() {
                 if (m_hoveredPlantIdx != -1) {
                     m_draggedPlantIdx = m_hoveredPlantIdx;
                     m_selectedPlantIdx = m_hoveredPlantIdx;
-                    m_dragOffset = plantes[m_hoveredPlantIdx].position_balcon - worldPos; 
+                    m_dragOffset = plantes[m_hoveredPlantIdx].positionBalcon - worldPos; 
                 }
                 else if (m_selectedPlantIdx >= 0 && m_selectedPlantIdx < (int)plantes.size()) {
-                    plantes[m_selectedPlantIdx].position_balcon = worldPos;
+                    plantes[m_selectedPlantIdx].positionBalcon = worldPos;
                     m_draggedPlantIdx = m_selectedPlantIdx;
                     m_dragOffset = sf::Vector2f(0, 0);
                 }
             } else {
-                plantes[m_draggedPlantIdx].position_balcon = worldPos + m_dragOffset;
+                plantes[m_draggedPlantIdx].positionBalcon = worldPos + m_dragOffset;
             }
         } else {
             if (m_draggedPlantIdx != -1) {
@@ -171,7 +171,7 @@ void StateBalconySim::handleInput() {
         }
 
         if (rmb && m_hoveredPlantIdx != -1) {
-            plantes[m_hoveredPlantIdx].position_balcon = sf::Vector2f(-100.f, -100.f);
+            plantes[m_hoveredPlantIdx].positionBalcon = sf::Vector2f(-100.f, -100.f);
             m_app->getUserBalcony().sauvegarderProfil("mon_balcon.json");
         }
     }
@@ -187,10 +187,10 @@ void StateBalconySim::handleInput() {
         sf::Vector2f cellCenter((gx + 0.5f) * CELL_PX, (gy + 0.5f) * CELL_PX);
         
         for (const auto& p : plantes) {
-            if (p.position_balcon.x >= 0.0f) { 
-                float radius = std::max(CELL_PX * 0.4f, std::sqrt((float)p.volume_pot_actuel_L) * 2.0f);
-                float dx = cellCenter.x - p.position_balcon.x;
-                float dy = cellCenter.y - p.position_balcon.y;
+            if (p.positionBalcon.x >= 0.0f) { 
+                float radius = std::max(CELL_PX * 0.4f, std::sqrt((float)p.volumePotActuel_L) * 2.0f);
+                float dx = cellCenter.x - p.positionBalcon.x;
+                float dy = cellCenter.y - p.positionBalcon.y;
                 
                 if ((dx * dx + dy * dy) <= (radius * radius)) {
                     isPlantHere = true;
@@ -434,8 +434,8 @@ void StateBalconySim::drawImGui() {
 
         ImGui::Begin("HoverBubble", nullptr, flags);
         
-        if (m_plantTextures.count(p.nom_espece)) {
-            sf::Texture& tex = m_plantTextures[p.nom_espece];
+        if (m_plantTextures.count(p.nomEspece)) {
+            sf::Texture& tex = m_plantTextures[p.nomEspece];
             ImVec2 imgSize(tex.getSize().x, tex.getSize().y);
             ImGui::SetCursorPosX((ImGui::GetWindowSize().x - imgSize.x) * 0.5f);
             ImGui::Image((ImTextureID)(intptr_t)tex.getNativeHandle(), imgSize);
@@ -443,7 +443,7 @@ void StateBalconySim::drawImGui() {
 
         ImGui::Spacing();
         ImGui::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "%s", p.surnom.c_str());
-        ImGui::TextDisabled("Pot de %d Litres", p.volume_pot_actuel_L);
+        ImGui::TextDisabled("Pot de %d Litres", p.volumePotActuel_L);
 
         ImGui::End();
     }
@@ -495,14 +495,14 @@ void StateBalconySim::bakePlantsIntoGrid() {
 
     const auto& plantes = m_app->getUserBalcony().getMesPlantes();
     for (const auto& p : plantes) {
-        if (p.position_balcon.x < 0.0f) continue;
+        if (p.positionBalcon.x < 0.0f) continue;
 
-        float px_center = p.position_balcon.x / CELL_PX;
-        float py_center = p.position_balcon.y / CELL_PX;
+        float px_center = p.positionBalcon.x / CELL_PX;
+        float py_center = p.positionBalcon.y / CELL_PX;
 
-        float radiusCells = std::max(1.0f, std::sqrt((float)p.volume_pot_actuel_L) * 2.0f / CELL_PX);
+        float radiusCells = std::max(1.0f, std::sqrt((float)p.volumePotActuel_L) * 2.0f / CELL_PX);
         
-        float pHeight = 0.2f + (p.volume_pot_actuel_L * 0.08f); 
+        float pHeight = 0.2f + (p.volumePotActuel_L * 0.08f); 
         float pOpacity = 0.5f; 
 
         int rC = std::ceil(radiusCells);
@@ -529,14 +529,14 @@ void StateBalconySim::renderPlants(sf::RenderWindow& window) {
         const auto& p = plantes[i];
         
         // On ne dessine que si la plante a une position valide sur le balcon
-        if (p.position_balcon.x >= 0.0f) {
+        if (p.positionBalcon.x >= 0.0f) {
             // Le rayon dépend du volume du pot
-            float radius = std::max(CELL_PX * 0.4f, std::sqrt((float)p.volume_pot_actuel_L) * 2.0f);
+            float radius = std::max(CELL_PX * 0.4f, std::sqrt((float)p.volumePotActuel_L) * 2.0f);
             plantShape.setRadius(radius);
             plantShape.setOrigin(radius, radius); 
             
             // La position est directement en coordonnées "Monde" grâce à la sf::View
-            plantShape.setPosition(p.position_balcon);
+            plantShape.setPosition(p.positionBalcon);
             
             // Couleurs de survol et de sélection
             if (m_editMode == EditMode::PLANTE && m_selectedPlantIdx == i) {

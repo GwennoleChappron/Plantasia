@@ -64,29 +64,23 @@ const Plant* DatabaseManager::findPlante(const std::string& nom) const {
     return nullptr;
 }
 
-const Soil* DatabaseManager::findSol(const std::string& typeSolStr) const {
-    // 1. On traduit le texte JSON en Enum C++
-    TypeSol targetEnum = EnumInfo::typeSolFromString(typeSolStr);
-    
-    // 2. On cherche dans la liste
+const Soil* DatabaseManager::findSol(const TypeSol& typeSol) const {
     for (const auto& s : m_sols) {
-        if (s.typeSol == targetEnum) {
+        if (s.typeSol == typeSol) {
             return &s;
         }
     }
     return nullptr;
 }
 
-const Racine* DatabaseManager::findRacine(const std::string& typeRacineStr) const {
-    TypeRacinaireEnum targetEnum = EnumInfo::parseTypeRacinaire(typeRacineStr);
-    
+const Racine* DatabaseManager::findRacine(const TypeRacinaireEnum& typeRacine) const {
     for (const auto& r : m_racines) {
-        if (r.typeRacinaire == targetEnum) return &r; 
+        if (r.typeRacinaire ==  typeRacine) return &r; 
     }
     return nullptr;
 }
 
-const Bouture* DatabaseManager::findBouture(const std::string& nom) const {
+const Bouture* DatabaseManager::findBouture(const TypeBouture& nom) const {
     for (const auto& b : m_boutures)
         if (b.nom == nom) return &b;
     return nullptr;
@@ -118,7 +112,7 @@ std::vector<const Plant*> DatabaseManager::filtrerParSol(const std::string& type
     std::vector<const Plant*> result;
     
     // 1. On transforme la chaîne passée en paramètre en énumération (ex: "TERREAU_UNIVERSEL" -> Enum::TERREAU_UNIVERSEL)
-    TypeSol targetSol = EnumInfo::typeSolFromString(typeSolStr);
+    TypeSol targetSol = EnumInfo::parseTypeSol(typeSolStr);
     
     if (targetSol == TypeSol::INCONNU) return result; // Sécurité si le texte est invalide
 

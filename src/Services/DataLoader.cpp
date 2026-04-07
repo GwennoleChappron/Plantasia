@@ -54,6 +54,14 @@ bool booleen(const json& j, const std::string& key, bool def = false) {
     return def;
 }
 
+std::vector<std::string> tableau(const json& j, const std::string& key) {
+    std::vector<std::string> result;
+    if (!j.contains(key) || !j[key].is_array()) return result;
+    for (const auto& item : j[key])
+        if (item.is_string()) result.push_back(item.get<std::string>());
+    return result;
+}
+
 template <typename EnumType, typename ParseFunction>
 std::vector<EnumType> tableauEnum(const json& item, const std::string& key, ParseFunction parser) {
     std::vector<EnumType> resultat;
@@ -70,12 +78,12 @@ std::vector<EnumType> tableauEnum(const json& item, const std::string& key, Pars
 }
 
 template <typename EnumType, typename ParseFunction>
-std::unordered_map<EnumType, int> dictionnaireEnum(const json& item, const std::string& key, ParseFunction parser) {
-    std::unordered_map<EnumType, int> resultat;
+std::unordered_map<EnumType, float> dictionnaireEnum(const json& item, const std::string& key, ParseFunction parser) {
+    std::unordered_map<EnumType, float> resultat;
     
     if (item.contains(key) && item[key].is_object()) {
         for (const auto& [json_key, json_val] : item[key].items()) {
-            if (json_val.is_number_integer()) {
+            if (json_val.is_number()) {
                 EnumType enumKey = parser(json_key);
                 resultat[enumKey] = json_val.get<float>();
             }
@@ -113,6 +121,7 @@ void normaliserPourcentages(std::unordered_map<EnumType, float>& proportions) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool DataLoader::chargerPlantes(const std::string& chemin, std::vector<Plant>& out) {
+    std::cerr << "[DataLoader] Chargement des plantes depuis : " << chemin << "\n";
     json j;
     if (!ouvrirJson(chemin, j)) return false;
  
@@ -120,13 +129,14 @@ bool DataLoader::chargerPlantes(const std::string& chemin, std::vector<Plant>& o
     out.reserve(j.size());
  
     for (const auto& item : j) {
+        std::cerr << "[DataLoader] Chargement de la plante : " << item.value("nom", "Inconnu") << "\n";
         Plant p;
  
         // ── Identité ─────────────────────────────────────────────────────────
         p.nom              = str(item, "nom");
         p.nomScientifique  = str(item, "nom_scientifique");
         p.autresNoms       = tableau(item, "autres_noms");
-        p.type             = entier(item, "type");
+        p.type             = EnumInfo::parseTypePlante(str(item, "type"));
         p.famille          = str(item, "famille");
         p.origine          = str(item, "origine");
  
@@ -143,13 +153,12 @@ bool DataLoader::chargerPlantes(const std::string& chemin, std::vector<Plant>& o
         p.besoinEau        = entier(item, "besoin_eau");
         p.frequenceEte     = str(item, "frequence_arrosage_ete");
         p.frequenceHiver   = str(item, "frequence_arrosage_hiver");
- 
+
         // ── Calendrier ───────────────────────────────────────────────────────
         p.floraisonDebut   = entier(item, "floraison_debut");
         p.floraisonFin     = entier(item, "floraison_fin");
         p.recolteDebut     = entier(item, "recolte_debut");
         p.recolteFin       = entier(item, "recolte_fin");
- 
         // ── Caractéristiques — nouvelles enums ───────────────────────────────
         p.vitesseCroissance   = EnumInfo::parseVitesseCroissance(str(item, "vitesse_croissance"));
         p.toleranceSecheresse = EnumInfo::parseToleranceSecheresse(str(item, "tolerance_secheresse"));
@@ -162,8 +171,8 @@ bool DataLoader::chargerPlantes(const std::string& chemin, std::vector<Plant>& o
         //  solTexte ← "conseil_terre"   (nuance narrative propre à la plante)
         //  phNote   ← "ph_sol"          (seulement si différent du sol général)
  
-        p.solEnum            = EnumInfo::typeSolFromString(str(item, "sol_recommande"));
-        p.solAlternatifEnum  = EnumInfo::typeSolFromString(str(item, "sol_alternatif"));
+        p.solEnum            = EnumInfo::parseTypeSol(str(item, "sol_recommande"));
+        p.solAlternatifEnum  = EnumInfo::parseTypeSol(str(item, "sol_alternatif"));
         p.solTexte           = str(item, "conseil_terre");
         p.phNote             = str(item, "ph_sol");   // vide pour 11/16 plantes → normal
  
@@ -237,7 +246,7 @@ bool DataLoader::chargerSols(const std::string& chemin, std::vector<Soil>& out) 
 
     for (const auto& item : j) {
         Soil s;
-        s.typeSol      = str(item, "type_sol");
+        s.typeSol      = EnumInfo::parseTypeSol(str(item, "type_sol"));
         s.texture      = EnumInfo::parseTexture(str(item, "texture"));
         s.drainage     = EnumInfo::parseDrainage(str(item, "drainage"));
         s.retentionEau = EnumInfo::parseRetentionEau(str(item, "retention_eau"));
@@ -252,11 +261,11 @@ bool DataLoader::chargerSols(const std::string& chemin, std::vector<Soil>& out) 
         normaliserPourcentages(s.composition);
         s.utilisation  = str(item, "utilisation");
         s.adaptePour   = tableau(item, "adapte_pour");
-        s.risques      = tableauEnum<Risque>(item, "risques", EnumInfo::parseRisque);
+        s.risques      = tableauEnum<RisquesSol>(item, "risques", EnumInfo::parseRisquesSol);
 
         if (item.contains("correction_ph") && item["correction_ph"].is_object()) {
-            s.correctionBaisser   = tableau(item["correction_ph"], "BAISSER");
-            s.correctionAugmenter = tableau(item["correction_ph"], "AUGMENTER");
+            s.correctionBaisser   = tableauEnum<CorrectionAcidite>(item["correction_ph"], "BAISSER", EnumInfo::parseCorrectionAcidite);
+            s.correctionAugmenter = tableauEnum<CorrectionAlcalinite>(item["correction_ph"], "AUGMENTER", EnumInfo::parseCorrectionAlcalinite);
         }
 
         s.cec                   = EnumInfo::parseCec(str(item, "cec"));
@@ -272,7 +281,7 @@ bool DataLoader::chargerSols(const std::string& chemin, std::vector<Soil>& out) 
         if (item.contains("indices") && item["indices"].is_object()) {
             for (const auto& [key, val] : item["indices"].items()) {
                 if (!val.is_null()) {
-                    s.indiceClé   = key;
+                    s.indiceClef   = key;
                     s.indiceValeur = val.get<int>();
                     break;
                 }
@@ -300,10 +309,10 @@ bool DataLoader::chargerRacines(const std::string& chemin, std::vector<Racine>& 
     for (const auto& item : j) {
         Racine r;
         r.typeRacinaire       = EnumInfo::parseTypeRacinaire(str(item, "type_racinaire"));
-        r.profondeurPot       = EnumInfo::parseProfondeurPot(str(item, "profondeur_pot"));
+        r.profondeur       = EnumInfo::parseProfondeurPot(str(item, "profondeur_pot"));
         r.largeur          = EnumInfo::parseLargeurPot(str(item, "largeur_pot"));
         r.formePot            = EnumInfo::parseFormePot(str(item, "forme_pot"));
-        r.drainage            = EnumInfo::parseBesoinDrainage(str(item, "drainage"));
+        r.drainage            = EnumInfo::parseBesoinsDrainage(str(item, "drainage"));
         r.frequenceRempotage  = EnumInfo::parseFrequenceRempotage(str(item, "frequence_rempotage"));
         r.sensibiliteRempotage= EnumInfo::parseSensibiliteRempotage(str(item, "sensibilite_rempotage"));
         r.materiaux           = tableauEnum<TypePot> (item, "materiaux", EnumInfo::parseTypePot);
@@ -334,7 +343,7 @@ bool DataLoader::chargerBoutures(const std::string& chemin, std::vector<Bouture>
 
     for (const auto& item : j) {
         Bouture b;
-        b.nom              = str(item, "nom");
+        b.nom              = EnumInfo::parseTypeBouture(str(item, "nom"));
         b.niveauDifficulte = EnumInfo::parseDifficulte(str(item, "niveau_difficulte"));
         b.typeTige         = EnumInfo::parseTypeTige(str(item, "type_tige"));
         b.substrat         = EnumInfo::parseSubstrat(str(item, "substrat"));

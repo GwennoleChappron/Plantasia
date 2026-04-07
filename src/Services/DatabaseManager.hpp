@@ -41,10 +41,10 @@ public:
     // ── Recherche par clé ─────────────────────────────────────────────────
 
     // Retourne nullptr si non trouvé.
-    const Plant*    findPlante  (const std::string& nom)        const;
-    const Soil*     findSol     (const std::string& typeSol)    const;
-    const Racine*   findRacine  (const std::string& typeRacin)  const;
-    const Bouture*  findBouture (const std::string& nom)        const;
+    const Plant*    findPlante  (const std::string& nom)                const;
+    const Soil*     findSol     (const TypeSol& typeSol)                const;
+    const Racine*   findRacine  (const TypeRacinaireEnum& typeRacin)    const;
+    const Bouture*  findBouture (const TypeBouture& nom)                const;
 
     // ── Listes pré-triées (calculées une seule fois au chargement) ────────
 

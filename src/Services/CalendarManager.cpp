@@ -20,17 +20,17 @@ void CalendarManager::generateTasks(const UserBalcony& balcony, const DatabaseMa
 
     for (const auto& up : balcony.getMesPlantes()) {
         // Remplacement de Plante par Plant, et utilisation de la bonne méthode (ex: findPlante)
-        const Plant* refP = db.findPlante(up.nom_espece); 
+        const Plant* refP = db.findPlante(up.nomEspece); 
         if (!refP) continue;
 
         // ── Événement 1 : Anniversaire d'Adoption (Rempotage) ──
-        if (m_currentMonth == up.mois_achat && up.jour_achat <= joursMax) {
+        if (m_currentMonth == up.moisAchat && up.jourAchat <= joursMax) {
             m_currentTasks.push_back({
                 "Anniversaire d'Adoption", 
                 "Cela fait un an (ou plus). Vérifiez si votre " + up.surnom + " a besoin d'un plus grand pot !", 
                 up.surnom, 
                 TaskType::REMPOTAGE, 
-                up.jour_achat, 
+                up.jourAchat, 
                 false
             });
         }
@@ -48,7 +48,7 @@ void CalendarManager::generateTasks(const UserBalcony& balcony, const DatabaseMa
         }
 
         // Décalage pour ne pas arroser toutes les plantes le même jour de la semaine
-        int decalage = (up.nom_espece.length() + up.jour_achat) % intervalle;
+        int decalage = (up.nomEspece.length() + up.jourAchat) % intervalle;
         int premierJour = 1 + decalage;
 
         // Déterminer la saison pour afficher la bonne consigne du JSON (nouvelles variables)

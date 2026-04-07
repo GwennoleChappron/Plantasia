@@ -22,7 +22,7 @@ struct Soil {
     std::unordered_map<CompositionSol, float> composition;
     std::string utilisation;
     std::vector<std::string> adaptePour;   // noms de plantes
-    std::vector<risquesSol> risques;
+    std::vector<RisquesSol> risques;
 
     // Correction pH
     std::vector<CorrectionAcidite> correctionBaisser;
@@ -39,6 +39,6 @@ struct Soil {
     std::string compatibiliteCalcaire;
 
     // Indice principal (ex: drainage: 95, fertilite: 85...)
-    std::string indiceClé;
+    std::string indiceClef;
     int         indiceValeur = 0;
 };

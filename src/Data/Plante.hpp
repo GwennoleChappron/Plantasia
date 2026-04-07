@@ -11,7 +11,7 @@ struct Plant {
     std::string              nom;
     std::string              nomScientifique;
     std::vector<std::string> autresNoms;
-    int                      type = 0;       // 0=aromatique, 1=fruitier, etc.
+    TypePlante               type = TypePlante::INCONNU;       // 0=aromatique, 1=fruitier, etc.
     std::string              famille;
     std::string              origine;
 

@@ -1,15 +1,12 @@
 #pragma once
 #include "Core/State.hpp"
-#include "Data/Plant.hpp"
+#include "Data/Plante.hpp"
 #include "Data/Soil.hpp"
-#include "Data/PotBouture.hpp"
+#include "Data/RacineBouture.hpp"
 #include <string>
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  StateWiki
-//
-//  Règle d'or : drawImGui() ne contient QUE des appels à des sous-fonctions.
-//  Chaque sous-fonction fait UNE chose et tient en < 150 lignes.
+//  StateWiki — v2 avec animations
 // ─────────────────────────────────────────────────────────────────────────────
 
 class StateWiki : public State {
@@ -23,40 +20,52 @@ public:
     void drawImGui() override;
 
 private:
-    // ── État de navigation ────────────────────────────────────────────────
+    // ── Navigation ────────────────────────────────────────────────────────────
     const Plant*   m_selectedPlant   = nullptr;
     const Soil*    m_selectedSoil    = nullptr;
     const Bouture* m_selectedBouture = nullptr;
+    char           m_searchBuffer[128] = "";
+    int            m_activeTab        = 0;
 
-    // Filtre de recherche dans la liste des plantes
-    char m_searchBuffer[128] = "";
+    // ── État animation ────────────────────────────────────────────────────────
+    //
+    //  Toutes les animations sont pilotées par des floats dans [0, 1] ou [0, cible].
+    //  Mise à jour dans update() via dt pour être indépendantes du framerate.
 
-    // Onglet actif dans le panneau de détail (0=Plante 1=Sol 2=Bouture)
-    int m_activeTab = 0;
+    // Fade panneau droit au changement de plante (0=transparent → 1=opaque)
+    float        m_fadeAlpha   = 1.f;
 
-    // ── Sous-fonctions de rendu ───────────────────────────────────────────
-    //  Chacune reçoit uniquement ce dont elle a besoin — pas de this implicite
-    //  sur tout le state.
+    // Score balcon affiché (float pour lerp smooth vers scoreBalcon cible)
+    float        m_animScore   = 0.f;
 
-    // Barre de navigation en haut (breadcrumb + titre de section)
-    void DrawBreadcrumb() const;
+    // Gouttes d'eau : valeur float animée vers besoinEau (ex: 0.f → 3.f)
+    float        m_dropAnim    = 0.f;
 
-    // Panneau gauche : liste des plantes + champ de recherche
+    // Donut sol : angle de sweep animé (0 → 2π en ~0.5s à l'entrée de l'onglet)
+    float        m_donutSweep  = 0.f;   // fraction [0, 1] de l'angle total
+
+    // Étapes bouture : combien d'étapes visibles (animé 0 → N, une par 0.25s)
+    float        m_etapeReveal = 0.f;
+
+    // Détection de changement de sélection (pour déclencher les animations)
+    const Plant* m_prevPlant   = nullptr;
+    int          m_prevTab     = 0;
+
+    float m_panelTime = 0.0f; // Chronomètre pour animer la liste de gauche en cascade
+    float m_vineProgress = 0.f; // 0-1 pour faire pousser une liane décorative à l'entrée du State
+
+    // ── Helpers internes ──────────────────────────────────────────────────────
+    void DrawBreadcrumb()    const;
     void DrawLeftPanel();
-
-    // Panneau droit : contenu selon l'onglet actif
     void DrawRightPanel();
 
-    // -- Onglets du panneau droit --
-    void DrawPlantDetails  (const Plant&   plant);
-    void DrawSoilDetails   (const Soil&    soil);
-    void DrawBoutureDetails(const Bouture& bouture);
+    void DrawPlantDetails   (const Plant&   plant);
+    void DrawPlantHeader    (const Plant&   plant);
+    void DrawPlantCultureCard(const Plant&  plant) const;
+    void DrawPlantWaterCard  (const Plant&  plant);        // non-const : m_dropAnim
+    void DrawPlantCalendar   (const Plant&  plant) const;
+    void DrawPlantRelations  (const Plant&  plant);
 
-    // -- Sections internes de DrawPlantDetails --
-    void DrawPlantHeader    (const Plant& plant) const;
-    void DrawPlantCultureCard(const Plant& plant) const;
-    void DrawPlantWaterCard  (const Plant& plant) const;
-    void DrawPlantCalendar   (const Plant& plant) const;
-    void DrawPlantRelations  (const Plant& plant);   // non-const : peut changer m_selectedSoil
-
+    void DrawSoilDetails    (const Soil&    soil);
+    void DrawBoutureDetails (const Bouture& bouture);
 };

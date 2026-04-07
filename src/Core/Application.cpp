@@ -1,3 +1,4 @@
+#include <iostream>
 #include "Application.hpp"
 #include "imgui.h"
 #include "imgui-SFML.h"
@@ -10,11 +11,18 @@ Application::Application() {
     (void)ImGui::SFML::Init(m_window);
     
     initStyleImGui();
-    
+    std::cerr << "Application démarrée avec succès.\n";
     m_database.chargerTout();
+    std::cerr << "Données chargées : " << m_database.getPlantes().size() << " plantes, "
+              << m_database.getSols().size() << " sols, "
+              << m_database.getRacines().size() << " racines, "
+              << m_database.getBoutures().size() << " boutures.\n";
     m_userBalcony.chargerProfil("mon_balcon.json");
+    std::cerr << "Profil utilisateur chargé : " << m_userBalcony.getMesPlantes().size() << " plantes sur le balcon.\n";
     m_background = std::make_unique<BackgroundEngine>(1100.0f, 720.0f);
+    std::cerr << "BackgroundEngine initialisé.\n";
     m_stateMachine.addState(std::make_unique<StateMainMenu>(this));
+    std::cerr << "StateMainMenu ajouté à la StateMachine.\n";
 }
 
 Application::~Application() {

@@ -28,7 +28,7 @@ struct Racine {
 // ─────────────────────────────────────────────────────────────────────────────
 
 struct Bouture {
-    std::string               nom;               // clé — ex: "BOUTURE_HERBACEE"
+    TypeBouture               nom;               // clé — ex: "BOUTURE_HERBACEE"
     NiveauDifficulte          niveauDifficulte = NiveauDifficulte::INCONNU;
     std::vector<Saison>       periode;
     TypeTige                  typeTige         = TypeTige::INCONNU;

@@ -1,454 +1,492 @@
 #pragma once
-#include "ColorTheme.hpp"
+
 #include <imgui.h>
-#include <functional>
+#include <imgui_internal.h>
+#include <cmath>
+#include <unordered_map>
 #include <string>
+#include <functional>
+#include <algorithm>
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  Widgets.hpp — Bibliothèque de widgets ImGui réutilisables pour Plantasia
-//
-//  Tous les widgets sont dans le namespace UI::.
-//  Aucune dépendance au State, à Application, ni aux données métier.
-//  Chaque widget est autonome : appelable depuis n'importe quel State.
-//
-//  Sommaire :
-//    1. UI::TagBadge     — badge coloré avec fond semi-transparent
-//    2. UI::InfoCard     — bloc card avec titre et contenu tabulaire
-//    3. UI::Gauge        — barre de progression fine et colorée
-//    4. UI::NavButton    — bouton avec action callback + tooltip optionnel
-//
-//  Dépendances externes : imgui.h uniquement
+//  UI::Theme — Couleurs et Constantes partagées
 // ═════════════════════════════════════════════════════════════════════════════
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Constantes internes partagées par tous les widgets
-//  Cohérentes avec Application::initStyleImGui() et Palette::
-// ─────────────────────────────────────────────────────────────────────────────
-
-namespace UI {
-namespace Theme {
+namespace UI::Theme {
+    constexpr float  ColLabel = 150.f;
+    constexpr float  TagPadX  = 10.f;
+    constexpr float  TagPadY  = 4.f;
+    
     constexpr ImVec4 Muted    = { 0.40f, 0.50f, 0.40f, 1.f };
     constexpr ImVec4 Titre    = { 0.88f, 0.92f, 0.88f, 1.f };
     constexpr ImVec4 Accent   = { 0.20f, 0.75f, 0.40f, 1.f };
     constexpr ImVec4 CardBg   = { 0.04f, 0.07f, 0.04f, 0.60f };
     constexpr ImVec4 CardBord = { 0.18f, 0.28f, 0.18f, 1.00f };
-    constexpr float  ColLabel = 150.f;   // offset colonne "valeur" dans InfoRow
-    constexpr float  TagPadX  =  10.f;   // padding horizontal tag
-    constexpr float  TagPadY  =   4.f;   // padding vertical tag
 }
-} // namespace UI
-
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  1.  UI::TagBadge
+//  UI::Anim — Moteur d'animations Modernes (Spring, Overshoot, Stagger)
 // ═════════════════════════════════════════════════════════════════════════════
-//
-//  Badge texte + fond coloré semi-transparent.
-//  Adapte sa largeur au contenu. Ne crée pas de collision d'ID ImGui.
-//
-//  Problème résolu vs DrawTag() dans StateWiki :
-//    L'ancienne version utilisait le texte comme ID de BeginChild().
-//    Si deux tags ont le même texte dans la même frame → comportement indéfini.
-//    Cette version génère un ID unique via ImGui::PushID / PopID.
-//
-//  Usage :
-//    UI::TagBadge("Facile",  Palette::VertVif);
-//    UI::TagBadge("Rustique", Palette::OrangeDoux);
-//    UI::TagBadge(plant.nom.c_str(), C::Accent, "Cliquer pour voir la fiche");
-//
-//  Inline dans la même ligne :
-//    UI::TagBadge("A", colorA); ImGui::SameLine(0.f, 4.f);
-//    UI::TagBadge("B", colorB);
-// ─────────────────────────────────────────────────────────────────────────────
 
-namespace UI {
+namespace UI::Anim {
 
-// Variante simple — affichage pur, pas cliquable
-inline void TagBadge(const char* text, const ImVec4& color) {
-    const ImVec2 textSize = ImGui::CalcTextSize(text);
-    const ImVec2 size     = { textSize.x + Theme::TagPadX * 2.f,
-                               textSize.y + Theme::TagPadY * 2.f };
+    inline float DeltaTime() { return ImGui::GetIO().DeltaTime; }
+    inline float Time()      { return (float)ImGui::GetTime(); }
 
-    // Fond semi-transparent dérivé de la couleur du tag
-    const ImVec4 bg = { color.x * 0.22f, color.y * 0.22f,
-                         color.z * 0.22f, 0.85f };
-
-    // Dessiner le fond via DrawList (pas de BeginChild → pas de collision ID)
-    const ImVec2 pos = ImGui::GetCursorScreenPos();
-    ImDrawList* dl   = ImGui::GetWindowDrawList();
-    dl->AddRectFilled(
-        pos,
-        { pos.x + size.x, pos.y + size.y },
-        ImGui::ColorConvertFloat4ToU32(bg),
-        4.f   // coins arrondis
-    );
-    // Bordure fine de la couleur principale
-    dl->AddRect(
-        pos,
-        { pos.x + size.x, pos.y + size.y },
-        ImGui::ColorConvertFloat4ToU32({ color.x, color.y, color.z, 0.45f }),
-        4.f, 0, 0.5f
-    );
-
-    // Texte centré dans le badge — InvisibleButton pour réserver l'espace
-    ImGui::InvisibleButton(text, size);
-    // Re-dessiner le texte par-dessus (ImGui::InvisibleButton ne le fait pas)
-    dl->AddText(
-        { pos.x + Theme::TagPadX, pos.y + Theme::TagPadY },
-        ImGui::ColorConvertFloat4ToU32(color),
-        text
-    );
-}
-
-// Variante avec tooltip — affiche une info au survol
-inline void TagBadge(const char* text, const ImVec4& color,
-                      const char* tooltip) {
-    TagBadge(text, color);
-    if (tooltip && ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s", tooltip);
-}
-
-// Variante avec std::string (évite .c_str() à l'appel)
-inline void TagBadge(const std::string& text, const ImVec4& color,
-                      const char* tooltip = nullptr) {
-    TagBadge(text.c_str(), color, tooltip);
-}
-
-} // namespace UI
-
-
-// ═════════════════════════════════════════════════════════════════════════════
-//  2.  UI::InfoCard
-// ═════════════════════════════════════════════════════════════════════════════
-//
-//  Bloc "card" avec fond sombre, bordure, titre de section et contenu libre.
-//  Remplace le pattern répété 8 fois dans StateWiki :
-//    ImGui::PushStyleColor(ImGuiCol_ChildBg, C::CardBg);
-//    ImGui::BeginChild("##id", {0, height}, true);
-//    ...contenu...
-//    ImGui::EndChild();
-//    ImGui::PopStyleColor();
-//
-//  Usage — hauteur fixe :
-//    UI::InfoCard("Culture", "##culture", 110.f, [&]() {
-//        UI::InfoRow("Pot", plant.volumePotMin.c_str());
-//        UI::InfoRow("Sol", plant.phSol.c_str());
-//    });
-//
-//  Usage — hauteur automatique (0.f) :
-//    UI::InfoCard("Notes", "##notes", 0.f, [&]() {
-//        ImGui::TextWrapped("%s", plant.notes.c_str());
-//    });
-//
-//  Usage — sans titre :
-//    UI::InfoCard(nullptr, "##card", 80.f, [&]() { ... });
-// ─────────────────────────────────────────────────────────────────────────────
-
-namespace UI {
-
-// Rendu d'une seule ligne "label [colonne] valeur coloré"
-// Extraction de DrawInfoRow — désormais dans UI:: et accessible partout.
-inline void InfoRow(const char* label, const char* value,
-                     const ImVec4& valueColor = Theme::Titre,
-                     float colOffset          = Theme::ColLabel) {
-    ImGui::TextColored(Theme::Muted, "%s", label);
-    ImGui::SameLine(colOffset);
-    ImGui::TextColored(valueColor, "%s", value);
-}
-
-// Surcharge std::string
-inline void InfoRow(const char* label, const std::string& value,
-                     const ImVec4& valueColor = Theme::Titre,
-                     float colOffset          = Theme::ColLabel) {
-    InfoRow(label, value.c_str(), valueColor, colOffset);
-}
-
-// La card principale
-inline void InfoCard(const char*            title,
-                      const char*            id,
-                      float                  height,
-                      std::function<void()>  content,
-                      const ImVec4&          bgColor  = Theme::CardBg,
-                      const ImVec4&          rimColor = Theme::CardBord) {
-    // Titre de section avec SeparatorText si fourni
-    if (title && title[0] != '\0')
-        ImGui::SeparatorText(title);
-
-    // Colorer le fond et la bordure de la child window
-    ImGui::PushStyleColor(ImGuiCol_ChildBg,    bgColor);
-    ImGui::PushStyleColor(ImGuiCol_Border,     rimColor);
-
-    // height = 0 → auto-resize sur le contenu
-    const ImVec2 size = { 0.f, height };
-    const bool   border = true;
-    ImGui::BeginChild(id, size, border);
-
-    ImGui::Spacing();
-    content();   // ← tout le contenu de la card est ici
-    ImGui::Spacing();
-
-    ImGui::EndChild();
-    ImGui::PopStyleColor(2);
-}
-
-// Variante compacte sans titre (utile pour les cards dans des grilles)
-inline void InfoCardRaw(const char*           id,
-                         float                 height,
-                         std::function<void()> content,
-                         const ImVec4&         bgColor  = Theme::CardBg,
-                         const ImVec4&         rimColor = Theme::CardBord) {
-    InfoCard(nullptr, id, height, std::move(content), bgColor, rimColor);
-}
-
-} // namespace UI
-
-
-// ═════════════════════════════════════════════════════════════════════════════
-//  3.  UI::Gauge
-// ═════════════════════════════════════════════════════════════════════════════
-//
-//  Barre de progression colorée et fine. 3 variantes selon le contexte.
-//
-//  Problème résolu vs DrawGauge() dans StateWiki :
-//    L'ancienne version ignorait le paramètre `label` (void label).
-//    Cette version l'affiche optionnellement, et propose une variante
-//    segmentée pour les niveaux discrets (besoin en eau 0-5 = 5 segments).
-//
-//  Usage — barre continue (score balcon, progression) :
-//    UI::Gauge(plant.scoreBalcon, 100, C::Accent);           // barre seule
-//    UI::Gauge(plant.scoreBalcon, 100, C::Accent, "Score");  // + label avant
-//    UI::Gauge(plant.scoreBalcon, 100, C::Accent, "Score", "95/100"); // + valeur après
-//
-//  Usage — segments discrets (besoin en eau 0-5) :
-//    UI::GaugeSegmented(plant.besoinEau, 5, eau.color);
-//
-//  Usage — inline dans une InfoRow :
-//    ImGui::TextColored(Theme::Muted, "Score :");
-//    ImGui::SameLine(150.f);
-//    UI::Gauge(95, 100, C::Accent);
-//    ImGui::SameLine();
-//    ImGui::TextColored(C::Secondaire, "95 / 100");
-// ─────────────────────────────────────────────────────────────────────────────
-
-namespace UI {
-
-// Barre continue — la plus fréquente
-inline void Gauge(float         value,
-                   float         maxValue,
-                   const ImVec4& color,
-                   const char*   labelBefore = nullptr,
-                   const char*   labelAfter  = nullptr,
-                   ImVec2        size        = { 80.f, 8.f }) {
-    if (labelBefore && labelBefore[0] != '\0') {
-        ImGui::TextColored(Theme::Muted, "%s", labelBefore);
-        ImGui::SameLine();
+    inline float SmoothStep(float t) {
+        t = std::clamp(t, 0.f, 1.f);
+        return t * t * (3.0f - 2.0f * t);
     }
 
-    const float ratio = (maxValue > 0.f) ? (value / maxValue) : 0.f;
-
-    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, color);
-    ImGui::PushStyleColor(ImGuiCol_FrameBg,
-        { color.x * 0.15f, color.y * 0.15f, color.z * 0.15f, 1.f });
-    // Overlay vide = pas de texte "0%" par défaut de ProgressBar
-    ImGui::ProgressBar(ratio, size, "");
-    ImGui::PopStyleColor(2);
-
-    if (labelAfter && labelAfter[0] != '\0') {
-        ImGui::SameLine();
-        ImGui::TextColored(color, "%s", labelAfter);
+    inline float Overshoot(float t) {
+        t = std::clamp(t, 0.f, 1.f) - 1.0f;
+        return t * t * (2.5f * t + 1.5f) + 1.0f;
     }
+
+    inline float EaseOut(float t) {
+        t = std::clamp(t, 0.f, 1.f);
+        return 1.0f - std::pow(1.0f - t, 3.0f);
+    }
+
+    inline float Pulse(float speed = 1.0f) {
+        return 0.5f + 0.5f * std::sin(Time() * speed);
+    }
+
+    inline float StepSmooth(float current, float target, float speed = 10.0f) {
+        return current + (target - current) * (1.0f - std::exp(-speed * DeltaTime()));
+    }
+
+    inline ImVec4 LerpColor(const ImVec4& a, const ImVec4& b, float t) {
+        return {
+            a.x + (b.x - a.x) * t,
+            a.y + (b.y - a.y) * t,
+            a.z + (b.z - a.z) * t,
+            a.w + (b.w - a.w) * t
+        };
+    }
+
+    inline ImVec4 WithAlpha(const ImVec4& c, float a) {
+        return { c.x, c.y, c.z, a };
+    }
+
+    // ── ANIMATIONS AVEC ÉTAT (Stateful) ──
+
+    inline float HoverProgress(ImGuiID id, bool isHovered, float speedIn = 8.f, float speedOut = 5.f) {
+        static std::unordered_map<ImGuiID, float> states;
+        float& t = states[id];
+        t += (isHovered ? speedIn : -speedOut) * DeltaTime();
+        t = std::clamp(t, 0.f, 1.f);
+        return SmoothStep(t); 
+    }
+
+    struct SpringState { float value = 0.f; float velocity = 0.f; };
+    
+    inline float Spring(ImGuiID id, float target, float stiffness = 200.f, float damping = 20.f) {
+        static std::unordered_map<ImGuiID, SpringState> states;
+        SpringState& s = states[id];
+        
+        if (s.value == 0.f && target != 0.f && states.count(id) == 1) s.value = target;
+
+        float dt = DeltaTime();
+        float force = stiffness * (target - s.value);
+        s.velocity += force * dt;
+        s.velocity *= std::exp(-damping * dt);
+        s.value += s.velocity * dt;
+        return s.value;
+    }
+
+    // ── TRANSITIONS DE LAYOUT ──
+
+    inline float Stagger(int index, float globalTime, float delayPerItem = 0.05f) {
+        return std::max(0.f, globalTime - (index * delayPerItem));
+    }
+
+    inline void ApplySlideFade(float t, float slideDistance = 20.f) {
+        float eased = Overshoot(t); 
+        float alpha = SmoothStep(t * 1.5f); 
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (1.f - eased) * slideDistance);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * alpha);
+    }
+
+    inline float Shimmer(float cycleDuration = 3.0f) {
+        // Retourne la position du reflet (0 à 1) avec une longue pause
+        float t = std::fmod(Time(), cycleDuration) / (cycleDuration * 0.3f); 
+        return std::clamp(t, 0.f, 1.f);
+    }
+
+    // Respiration organique (gonfle et dégonfle très doucement)
+    inline float Breath(float speed = 1.5f, float amplitude = 0.02f) {
+        return 1.0f + (std::sin(Time() * speed) * 0.5f + 0.5f) * amplitude;
+    }
+
+    // Tremblement violent (Wiggle) pour les alertes
+    inline float Wiggle(ImGuiID id, bool trigger, float strength = 150.0f) {
+        static std::unordered_map<ImGuiID, SpringState> states;
+        SpringState& s = states[id];
+        
+        if (trigger) s.velocity += strength; // Coup de pied dans le ressort !
+        
+        float dt = DeltaTime();
+        float force = 400.f * (0.f - s.value); // Retour fort vers 0
+        s.velocity += force * dt;
+        s.velocity *= std::exp(-15.f * dt); // Amortissement brutal
+        s.value += s.velocity * dt;
+        
+        return s.value;
+    }
+    
 }
 
-// Surcharge int (besoin en eau, score /100…)
-inline void Gauge(int           value,
-                   int           maxValue,
-                   const ImVec4& color,
-                   const char*   labelBefore = nullptr,
-                   const char*   labelAfter  = nullptr,
-                   ImVec2        size        = { 80.f, 8.f }) {
-    Gauge(static_cast<float>(value),
-          static_cast<float>(maxValue),
-          color, labelBefore, labelAfter, size);
-}
+// ═════════════════════════════════════════════════════════════════════════════
+//  UI::Widgets — Composants Agnostiques
+// ═════════════════════════════════════════════════════════════════════════════
 
-// Barre segmentée — pour les niveaux discrets (besoin eau 0-5, difficulté 1-3)
-// Dessine N petits rectangles séparés par un gap de 2px.
-inline void GaugeSegmented(int           value,
-                             int           maxValue,
-                             const ImVec4& colorOn,
-                             const ImVec4& colorOff  = { 0.15f, 0.20f, 0.15f, 1.f },
-                             float         segWidth  = 14.f,
-                             float         segHeight =  8.f,
-                             float         gap       =  2.f) {
-    ImDrawList* dl  = ImGui::GetWindowDrawList();
-    ImVec2      pos = ImGui::GetCursorScreenPos();
+namespace UI {
 
-    const float totalW = maxValue * segWidth + (maxValue - 1) * gap;
+    // ── 1. TAGS & BADGES ──
+    
+    inline void TagBadge(const char* text, const ImVec4& color, const char* tooltip = nullptr) {
+        const ImVec2 textSize = ImGui::CalcTextSize(text);
+        const ImVec2 size = { textSize.x + Theme::TagPadX * 2.f, textSize.y + Theme::TagPadY * 2.f };
+        const ImVec4 bg = { color.x * 0.22f, color.y * 0.22f, color.z * 0.22f, 0.85f };
 
-    for (int i = 0; i < maxValue; ++i) {
-        const float x0 = pos.x + i * (segWidth + gap);
-        const ImVec4& c = (i < value) ? colorOn : colorOff;
-        dl->AddRectFilled(
-            { x0, pos.y },
-            { x0 + segWidth, pos.y + segHeight },
-            ImGui::ColorConvertFloat4ToU32(c),
-            2.f
+        const ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        dl->AddRectFilled(pos, { pos.x + size.x, pos.y + size.y }, ImGui::ColorConvertFloat4ToU32(bg), 4.f);
+        dl->AddRect(pos, { pos.x + size.x, pos.y + size.y }, ImGui::ColorConvertFloat4ToU32({ color.x, color.y, color.z, 0.45f }), 4.f, 0, 0.5f);
+
+        ImGui::InvisibleButton(text, size);
+        dl->AddText({ pos.x + Theme::TagPadX, pos.y + Theme::TagPadY }, ImGui::ColorConvertFloat4ToU32(color), text);
+
+        if (tooltip && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tooltip);
+    }
+    
+    inline void TagBadge(const std::string& text, const ImVec4& color, const char* tooltip = nullptr) { 
+        TagBadge(text.c_str(), color, tooltip); 
+    }
+
+    // ── 2. INFO CARDS & ROWS ──
+    
+    inline void InfoRow(const char* label, const char* value, const ImVec4& valueColor = Theme::Titre, float colOffset = Theme::ColLabel) {
+        ImGui::TextColored(Theme::Muted, "%s", label);
+        ImGui::SameLine(colOffset);
+        ImGui::TextColored(valueColor, "%s", value);
+    }
+    
+    inline void InfoRow(const char* label, const std::string& value, const ImVec4& valueColor = Theme::Titre, float colOffset = Theme::ColLabel) {
+        InfoRow(label, value.c_str(), valueColor, colOffset);
+    }
+    
+    inline void InfoRow(const char* label, bool value, float colOffset = Theme::ColLabel) {
+        InfoRow(label, value ? "Oui" : "Non", value ? ImVec4{0.2f,0.8f,0.3f,1.f} : Theme::Muted, colOffset);
+    }
+
+    // (Note : Si la surcharge avec EnumMetadata pose problème car EnumMetadata n'est pas défini ici, supprime cette ligne ou ajoute le #include correspondant)
+    template <typename T>
+    inline void InfoRow(const char* label, const T& meta, float colOffset = Theme::ColLabel) {
+        InfoRow(label, meta.label.c_str(), meta.color, colOffset);
+    }
+
+    inline void InfoCard(const char* title, const char* id, float height, std::function<void()> content, const ImVec4& bgColor = Theme::CardBg, const ImVec4& rimColor = Theme::CardBord) {
+        if (title && title[0] != '\0') ImGui::SeparatorText(title);
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, bgColor);
+        ImGui::PushStyleColor(ImGuiCol_Border, rimColor);
+        ImGui::BeginChild(id, { 0.f, height }, true);
+        ImGui::Spacing();
+        content();
+        ImGui::Spacing();
+        ImGui::EndChild();
+        ImGui::PopStyleColor(2);
+    }
+    
+    inline void InfoCardRaw(const char* id, float height, std::function<void()> content, const ImVec4& bgColor = Theme::CardBg, const ImVec4& rimColor = Theme::CardBord) {
+        InfoCard(nullptr, id, height, std::move(content), bgColor, rimColor);
+    }
+
+    // ── 3. JAUGES ──
+    
+    inline void Gauge(float value, float maxValue, const ImVec4& color, const char* labelBefore = nullptr, const char* labelAfter = nullptr, ImVec2 size = { 80.f, 8.f }) {
+        if (labelBefore && labelBefore[0] != '\0') {
+            ImGui::TextColored(Theme::Muted, "%s", labelBefore);
+            ImGui::SameLine();
+        }
+        const float ratio = (maxValue > 0.f) ? (value / maxValue) : 0.f;
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, color);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, { color.x * 0.15f, color.y * 0.15f, color.z * 0.15f, 1.f });
+        ImGui::ProgressBar(ratio, size, "");
+        ImGui::PopStyleColor(2);
+        if (labelAfter && labelAfter[0] != '\0') {
+            ImGui::SameLine();
+            ImGui::TextColored(color, "%s", labelAfter);
+        }
+    }
+    
+    inline void Gauge(int value, int maxValue, const ImVec4& color, const char* labelBefore = nullptr, const char* labelAfter = nullptr) {
+        Gauge((float)value, (float)maxValue, color, labelBefore, labelAfter);
+    }
+
+    inline void GaugeSegmented(int value, int maxValue, const ImVec4& colorOn, const ImVec4& colorOff = { 0.15f, 0.20f, 0.15f, 1.f }, float segWidth = 14.f, float segHeight = 8.f, float gap = 2.f) {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        const float totalW = maxValue * segWidth + (maxValue - 1) * gap;
+        for (int i = 0; i < maxValue; ++i) {
+            const float x0 = pos.x + i * (segWidth + gap);
+            dl->AddRectFilled({ x0, pos.y }, { x0 + segWidth, pos.y + segHeight }, ImGui::ColorConvertFloat4ToU32((i < value) ? colorOn : colorOff), 2.f);
+        }
+        ImGui::Dummy({ totalW, segHeight });
+    }
+
+    inline void GaugeWaterDrops(int value, int maxValue, const ImVec4& colorOn, const ImVec4& colorOff = { 0.15f, 0.20f, 0.15f, 1.f }, float dropWidth = 10.f, float dropHeight= 14.f, float gap = 4.f) {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        const float totalW = maxValue * dropWidth + (maxValue - 1) * gap;
+        for (int i = 0; i < maxValue; ++i) {
+            float cx = pos.x + i * (dropWidth + gap) + dropWidth * 0.5f;
+            float r = dropWidth * 0.5f;
+            float cy = pos.y + dropHeight - r;
+            ImU32 col = ImGui::ColorConvertFloat4ToU32((i < value) ? colorOn : colorOff);
+
+            dl->PathClear();
+            dl->PathLineTo({cx, pos.y});
+            dl->PathBezierCubicCurveTo({cx + r * 0.8f, pos.y + dropHeight * 0.3f}, {cx + r, cy - r * 0.5f}, {cx + r, cy});
+            dl->PathArcTo({cx, cy}, r, 0.0f, 3.14159265f, 12);
+            dl->PathBezierCubicCurveTo({cx - r, cy - r * 0.5f}, {cx - r * 0.8f, pos.y + dropHeight * 0.3f}, {cx, pos.y});
+            dl->PathFillConvex(col);
+        }
+        ImGui::Dummy({ totalW, dropHeight });
+    }
+
+    // ── 4. BOUTONS NAV & UTILITAIRES ──
+    
+    inline void NavButton(const char* label, std::function<void()> onClic, const char* tooltip = nullptr, bool enabled = true) {
+        if (!enabled) ImGui::BeginDisabled();
+        ImGui::PushID(label);
+        if (ImGui::SmallButton(label) && onClic) onClic();
+        ImGui::PopID();
+        if (!enabled) ImGui::EndDisabled();
+        if (tooltip && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tooltip);
+    }
+    
+    inline void NavButton(const std::string& label, std::function<void()> onClic, const char* tooltip = nullptr, bool enabled = true) {
+        NavButton(label.c_str(), std::move(onClic), tooltip, enabled);
+    }
+
+    inline void NavButtonPrimary(const char* label, std::function<void()> onClic, const char* tooltip = nullptr, bool enabled = true) {
+        if (!enabled) ImGui::BeginDisabled();
+        ImGui::PushID(label);
+        ImGui::PushStyleColor(ImGuiCol_Button, { 0.10f, 0.35f, 0.18f, 1.f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0.15f, 0.55f, 0.30f, 1.f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 0.20f, 0.75f, 0.40f, 1.f });
+        if (ImGui::Button(label) && onClic) onClic();
+        ImGui::PopStyleColor(3);
+        ImGui::PopID();
+        if (!enabled) ImGui::EndDisabled();
+        if (tooltip && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tooltip);
+    }
+
+    inline void NavButtonIcon(const char* icon, const char* label, std::function<void()> onClic, const char* tooltip = nullptr, bool enabled = true) {
+        std::string full = std::string(icon) + " " + label + "##" + label;
+        NavButton(full.c_str(), std::move(onClic), tooltip, enabled);
+    }
+
+    inline void Section(const char* title) { 
+        ImGui::Spacing(); 
+        ImGui::SeparatorText(title); 
+    }
+    
+    inline void LabelAccent(const char* label, const char* value, const ImVec4& valueColor = Theme::Accent) {
+        ImGui::TextColored(Theme::Muted, "%s", label); 
+        ImGui::SameLine(0.f, 4.f); 
+        ImGui::TextColored(valueColor, "%s", value);
+    }
+    
+    inline void BodyText(const char* text, const ImVec4& color = Theme::Titre) {
+        ImGui::PushTextWrapPos(0.f); 
+        ImGui::TextColored(color, "%s", text); 
+        ImGui::PopTextWrapPos();
+    }
+    
+    inline void Gap(float pixels = 8.f) { 
+        ImGui::Dummy({ 0.f, pixels }); 
+    }
+
+   // ─────────────────────────────────────────────────────────────────────────────
+    //  SectionAnimated — Liane AAA (Vent, Respiration, Souris & Spores)
+    // ─────────────────────────────────────────────────────────────────────────────
+    inline void SectionAnimated(const char* title, float progress, bool isBlooming = false) {
+        ImGui::Spacing();
+
+        // 🌿 Animation légère du titre (respiration)
+        float t = ImGui::GetTime();
+        float breathe = 0.5f + 0.5f * sinf(t * 1.5f);
+        ImVec4 titleCol = ImLerp(Theme::Accent, ImVec4(0.4f, 1.0f, 0.5f, 1.f), breathe * 0.3f);
+
+        ImGui::TextColored(titleCol, "%s", title);
+
+        // ── PARAMÈTRES ──
+        const float frequenceX    = 35.f;  
+        const float amplitudeY    = 8.f;   
+        const float epaisseurTige = 1.5f;  
+        const float tailleFeuille = 2.5f;  
+        const float ecartFeuille  = 4.f;   
+
+        const ImVec4 couleurTige    = Theme::Muted;
+        const ImVec4 couleurFeuille = Theme::Accent;
+
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        float fullWidth = ImGui::GetContentRegionAvail().x;
+
+        float eased = Anim::EaseOut(progress);
+        float currentWidth = fullWidth * eased;
+
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+
+        // 🖱️ Interaction Souris (Préparation)
+        ImVec2 mousePos = ImGui::GetMousePos();
+        const float mouseRadius = 45.f; // Zone d'influence de la souris
+
+        // On agrandit encore un peu le clip rect pour laisser les spores monter
+        dl->PushClipRect(
+            {p.x, p.y - amplitudeY - 20.f},
+            {p.x + currentWidth, p.y + amplitudeY * 2.f + 5.f},
+            true
         );
+
+        int segments = (int)(fullWidth / frequenceX) + 1;
+        float midY   = p.y + amplitudeY * 0.5f; 
+
+        // 🌬️ vent global
+        float wind = sinf(t * 0.8f) * 2.0f;
+
+        // ── TIGE (plus organique + animée) ──
+        dl->PathClear();
+        dl->PathLineTo({p.x, midY});
+
+        for (int i = 0; i < segments; ++i) {
+            float startX = p.x + i * frequenceX;
+            float endX   = startX + frequenceX;
+
+            // 🌊 variation dynamique
+            float phase = t * 1.2f + i * 0.4f;
+            float dynamicAmp = amplitudeY + sinf(phase) * 2.0f;
+
+            float ctrlY1 = (i % 2 == 0) ? p.y - dynamicAmp : p.y + dynamicAmp * 2.f;
+            float ctrlY2 = (i % 2 == 0) ? p.y + dynamicAmp * 2.f : p.y - dynamicAmp;
+
+            // 🌬️ décalage vent
+            float windOffset = wind * (i / (float)segments);
+
+            // 🖱️ Répulsion de la tige par la souris
+            float segCenterX = startX + frequenceX * 0.5f;
+            float distToMouse = hypotf(mousePos.x - segCenterX, mousePos.y - midY);
+            float mousePushY = 0.f;
+            if (distToMouse < mouseRadius) {
+                // Pousse la tige vers le bas si la souris est proche
+                mousePushY = (mouseRadius - distToMouse) * 0.3f; 
+            }
+
+            dl->PathBezierCubicCurveTo(
+                {startX + frequenceX * 0.3f + windOffset, ctrlY1 + mousePushY},
+                {startX + frequenceX * 0.7f + windOffset, ctrlY2 + mousePushY},
+                {endX + windOffset, midY + mousePushY * 0.5f}
+            );
+        }
+
+        dl->PathStroke(ImGui::ColorConvertFloat4ToU32(couleurTige), 0, epaisseurTige);
+
+        // ── RNG stable ──
+        uint32_t rng_state = ImGui::GetID(title) + 12345;
+        auto randFloat = [&]() {
+            rng_state = rng_state * 1664525 + 1013904223;
+            return (float)rng_state / (float)0xFFFFFFFF;
+        };
+
+        // ── FEUILLES / FLEURS / SPORES ──
+        for (int i = 0; i < segments; ++i) {
+            float growthThreshold = (i / (float)segments);
+
+            // 🌱 croissance progressive
+            if (growthThreshold > eased) break;
+
+            float baseX = p.x + i * frequenceX + frequenceX * 0.5f;
+            float baseY = midY + ((i % 2 == 0) ? ecartFeuille : -ecartFeuille);
+
+            float offsetX = (randFloat() - 0.5f) * (frequenceX * 0.6f);
+            float offsetY = (randFloat() - 0.5f) * (ecartFeuille * 1.5f);
+
+            float leafX = baseX + offsetX;
+            float leafY = baseY + offsetY;
+
+            // 🌬️ vent local + micro jitter
+            float localWind = sinf(t * 2.0f + i) * 1.5f;
+            leafX += localWind;
+
+            // 🖱️ Effet d'écartement au passage de la souris (parallaxe)
+            float distToMouse = hypotf(mousePos.x - leafX, mousePos.y - leafY);
+            if (distToMouse < mouseRadius) {
+                float force = (mouseRadius - distToMouse) / mouseRadius;
+                // Fuit la position de la souris
+                leafX += (leafX - mousePos.x) * force * 0.2f;
+                leafY += (leafY - mousePos.y) * force * 0.2f;
+            }
+
+            ImVec4 finalColor = couleurFeuille;
+
+            // 🌿 respiration feuille
+            float life = 0.8f + sinf(t * 3.0f + i) * 0.2f;
+            float finalSize = tailleFeuille * life * (0.8f + randFloat() * 0.4f);
+
+            // 🌸 FLORAISON
+            bool isFlower = false;
+            if (isBlooming && randFloat() < 0.35f) {
+                isFlower = true;
+                float colorRng = randFloat();
+                if (colorRng < 0.25f)      finalColor = { 0.95f, 0.45f, 0.65f, 1.f };
+                else if (colorRng < 0.50f) finalColor = { 0.95f, 0.85f, 0.25f, 1.f };
+                else if (colorRng < 0.75f) finalColor = { 0.40f, 0.75f, 0.95f, 1.f };
+                else                       finalColor = { 0.75f, 0.45f, 0.85f, 1.f };
+
+                finalSize *= 1.4f;
+                
+                // ✨ SPORES / LUCIOLES (Uniquement sur les fleurs)
+                // On crée une petite particule qui s'échappe vers le haut et boucle
+                float sporeTime = t * (0.5f + randFloat() * 0.5f) + i; // Vitesse variable
+                float sporeYOffset = fmodf(sporeTime * 15.f, 25.f);    // Monte jusqu'à 25px puis reset
+                
+                // Opacité qui fade-out au fur et à mesure que ça monte
+                float sporeAlpha = 1.0f - (sporeYOffset / 25.f);
+                sporeAlpha *= sinf(sporeTime * 5.f) * 0.5f + 0.5f; // Clignotement
+                
+                if (sporeAlpha > 0.05f) {
+                    float sporeX = leafX + sinf(sporeTime * 3.f) * 5.f; // Dérive horizontale
+                    float sporeY = leafY - sporeYOffset;
+                    ImVec4 sporeColor = { finalColor.x, finalColor.y, finalColor.z, sporeAlpha };
+                    dl->AddCircleFilled({sporeX, sporeY}, 1.0f, ImGui::ColorConvertFloat4ToU32(sporeColor));
+                }
+            }
+
+            dl->AddCircleFilled(
+                {leafX, leafY},
+                finalSize,
+                ImGui::ColorConvertFloat4ToU32(finalColor)
+            );
+
+            // 🌱 bourgeon secondaire animé
+            if (!isFlower && randFloat() < 0.40f) {
+                float subX = leafX + sinf(t * 4.0f + i) * 2.0f;
+                float subY = leafY + cosf(t * 3.0f + i) * 2.0f;
+                float subSize = finalSize * (0.4f + randFloat() * 0.3f);
+
+                dl->AddCircleFilled(
+                    {subX, subY},
+                    subSize,
+                    ImGui::ColorConvertFloat4ToU32(couleurFeuille)
+                );
+            }
+        }
+
+        dl->PopClipRect();
+
+        ImGui::Dummy({0.f, amplitudeY + tailleFeuille * 2.f + 6.f});
     }
-    // Réserver l'espace dans le layout
-    ImGui::Dummy({ totalW, segHeight });
-}
-
-} // namespace UI
-
-
-// ═════════════════════════════════════════════════════════════════════════════
-//  4.  UI::NavButton
-// ═════════════════════════════════════════════════════════════════════════════
-//
-//  Bouton de navigation — exécute un callback à la place de modifier
-//  des variables directement dans la fonction de rendu.
-//
-//  Pourquoi un callback et pas juste un bool retourné ?
-//  → Un bool force le if() à l'appel, et donc la logique de navigation
-//    reste dans la fonction de rendu. Le callback sépare "détecter le clic"
-//    de "que faire quand on clique".
-//
-//  Deux variantes :
-//    - NavButton  : bouton texte discret (style SmallButton)
-//    - NavButtonPrimary : bouton plein vert (action principale)
-//
-//  Usage — navigation vers un sol :
-//    UI::NavButton("Terreau méditerranéen", [&]() {
-//        m_selectedSoil = sol;
-//        m_activeTab    = 1;
-//    });
-//
-//  Usage — avec tooltip :
-//    UI::NavButton(solMeta.label.c_str(), [&]() {
-//        m_selectedSoil = sol;
-//        m_activeTab    = 1;
-//    }, "pH 7.0-8.5 · Très drainant");
-//
-//  Usage — bouton principal (retour menu, valider) :
-//    UI::NavButtonPrimary("Retour au menu", [&]() {
-//        m_app->getStateMachine().addState(...);
-//    });
-//
-//  Usage — désactivé (plante sans bouture) :
-//    UI::NavButton("Aucune bouture", nullptr, "Cette plante ne se bouture pas",
-//                  /*enabled=*/false);
-// ─────────────────────────────────────────────────────────────────────────────
-
-namespace UI {
-
-// Variante discrète — style SmallButton (remplace les ImGui::SmallButton inline)
-inline void NavButton(const char*           label,
-                       std::function<void()> onClic,
-                       const char*           tooltip = nullptr,
-                       bool                  enabled = true) {
-    if (!enabled) ImGui::BeginDisabled();
-
-    // Générer un ID stable même si le label change entre frames
-    ImGui::PushID(label);
-
-    if (ImGui::SmallButton(label) && onClic)
-        onClic();
-
-    ImGui::PopID();
-
-    if (!enabled) ImGui::EndDisabled();
-
-    if (tooltip && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        ImGui::SetTooltip("%s", tooltip);
-}
-
-// Surcharge std::string
-inline void NavButton(const std::string&    label,
-                       std::function<void()> onClic,
-                       const char*           tooltip = nullptr,
-                       bool                  enabled = true) {
-    NavButton(label.c_str(), std::move(onClic), tooltip, enabled);
-}
-
-// Variante primaire — bouton plein, couleur accent (action principale)
-inline void NavButtonPrimary(const char*           label,
-                               std::function<void()> onClic,
-                               const char*           tooltip = nullptr,
-                               bool                  enabled = true) {
-    if (!enabled) ImGui::BeginDisabled();
-
-    ImGui::PushID(label);
-    ImGui::PushStyleColor(ImGuiCol_Button,
-        { 0.10f, 0.35f, 0.18f, 1.f });   // AccentSombre
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-        { 0.15f, 0.55f, 0.30f, 1.f });   // AccentDoux
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-        { 0.20f, 0.75f, 0.40f, 1.f });   // Accent
-
-    if (ImGui::Button(label) && onClic)
-        onClic();
-
-    ImGui::PopStyleColor(3);
-    ImGui::PopID();
-
-    if (!enabled) ImGui::EndDisabled();
-
-    if (tooltip && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        ImGui::SetTooltip("%s", tooltip);
-}
-
-// Variante icône + texte — pour les boutons de navigation avec préfixe visuel
-// Ex : NavButtonIcon("→ Voir le sol", "TERREAU_MEDITERRANEEN", callback)
-inline void NavButtonIcon(const char*           icon,
-                            const char*           label,
-                            std::function<void()> onClic,
-                            const char*           tooltip = nullptr,
-                            bool                  enabled = true) {
-    // Construire "→ Terreau méditerranéen##label" pour un ID unique
-    std::string full = std::string(icon) + " " + label;
-    full += "##";
-    full += label;
-    NavButton(full.c_str(), std::move(onClic), tooltip, enabled);
-}
-
-} // namespace UI
-
-
-// ═════════════════════════════════════════════════════════════════════════════
-//  HELPERS SUPPLÉMENTAIRES
-//  Petits patterns très fréquents qui ne méritent pas un widget complet.
-// ═════════════════════════════════════════════════════════════════════════════
-
-namespace UI {
-
-// Séparateur titré — wrapper de SeparatorText, ajuste l'espacement
-inline void Section(const char* title) {
-    ImGui::Spacing();
-    ImGui::SeparatorText(title);
-}
-
-// Ligne de texte muted + texte accent sur la même ligne
-// Ex : "Sol recommandé : [Terreau méditerranéen]"
-inline void LabelAccent(const char* label, const char* value,
-                          const ImVec4& valueColor = Theme::Accent) {
-    ImGui::TextColored(Theme::Muted, "%s", label);
-    ImGui::SameLine(0.f, 4.f);
-    ImGui::TextColored(valueColor, "%s", value);
-}
-
-// Wrapper texte enveloppé dans la largeur disponible
-inline void BodyText(const char* text,
-                      const ImVec4& color = Theme::Titre) {
-    ImGui::PushTextWrapPos(0.f);
-    ImGui::TextColored(color, "%s", text);
-    ImGui::PopTextWrapPos();
-}
-
-// Ligne vide calibrée — plus lisible que ImGui::Spacing() x3
-inline void Gap(float pixels = 8.f) {
-    ImGui::Dummy({ 0.f, pixels });
-}
-
 } // namespace UI

@@ -50,9 +50,9 @@ inline const EnumMetadata& unknownMetadata() {
 //  2. ENUMS COMMUNS (Partagés entre plusieurs entités)
 // ═════════════════════════════════════════════════════════════════════════════
 
-enum class NiveauDifficulte { FACILE, MOYEN, DIFFICILE, INCONNU };
-enum class TypeRacinaireEnum { FASCICULE, PIVOTANT, TRACANT, LIGNEUX, TUBEREUX, INCONNU }; 
-enum class Saison { PRINTEMPS, ETE, AUTOMNE, HIVER, INTERIEUR, INCONNU };
+enum class NiveauDifficulte     { FACILE, MOYEN, DIFFICILE, INCONNU };
+enum class TypeRacinaireEnum    { FASCICULE, PIVOTANT, TRACANT, LIGNEUX, TUBEREUX, INCONNU }; 
+enum class Saison               { PRINTEMPS, ETE, AUTOMNE, HIVER, INTERIEUR, INCONNU };
 
 namespace EnumInfo {
     // Niveau Difficulté
@@ -122,16 +122,30 @@ namespace EnumInfo {
 //  3. ENCYCLOPEDIA.JSON (Spécifique aux Plantes)
 // ═════════════════════════════════════════════════════════════════════════════
 
-enum class Rusticite { RUSTIQUE, SEMI_RUSTIQUE, FRAGILE, INCONNU };
-enum class ExpositionSoleil { PLEIN_SOLEIL, MI_OMBRE, INCONNU };
-enum class ExpositionVent { MODERE, ABRITE, INCONNU };
-enum class VitesseCroissance { LENTE, MODEREE, RAPIDE, TRES_RAPIDE, INCONNU};
-enum class ToleranceSecheresse { EXCELLENTE, BONNE, MOYENNE, FAIBLE, TRES_FAIBLE, INCONNU };
-enum class SensibiliteEau { TRES_ELEVEE, ELEVEE, MOYENNE, FAIBLE, INCONNU };
-enum class TypeFeuillage { PERSISTANT, CADUC, SEMI_PERSISTANT, ANNUEL, BISANNUEL, INCONNU };
-enum class TypeBouture { BOUTURE_HERBACEE, BOUTURE_SEMI_LIGNEUSE, BOUTURE_LIGNEUSE, BOUTURE_EAU, BOUTURE_FEUILLE, BOUTURE_RACINE, INCONNU };
+enum class TypePlante           { AROMATIQUE, ORNEMENTALE, FRUITIER, LEGUMINEUSE, INCONNU };
+enum class Rusticite            { RUSTIQUE, SEMI_RUSTIQUE, FRAGILE, INCONNU };
+enum class ExpositionSoleil     { PLEIN_SOLEIL, MI_OMBRE, INCONNU };
+enum class ExpositionVent       { MODERE, ABRITE, INCONNU };
+enum class VitesseCroissance    { LENTE, MODEREE, RAPIDE, TRES_RAPIDE, INCONNU};
+enum class ToleranceSecheresse  { EXCELLENTE, BONNE, MOYENNE, FAIBLE, TRES_FAIBLE, INCONNU };
+enum class SensibiliteEau       { TRES_ELEVEE, ELEVEE, MOYENNE, FAIBLE, INCONNU };
+enum class TypeFeuillage        { PERSISTANT, CADUC, SEMI_PERSISTANT, ANNUEL, BISANNUEL, INCONNU };
+enum class TypeBouture          { BOUTURE_HERBACEE, BOUTURE_SEMI_LIGNEUSE, BOUTURE_LIGNEUSE, BOUTURE_EAU, BOUTURE_FEUILLE, BOUTURE_RACINE, INCONNU };
 
 namespace EnumInfo {
+
+    // Type de plante
+    inline const EnumMetadata& get(TypePlante v) {
+        using T = TypePlante;
+        static const std::unordered_map<T, EnumMetadata> map {
+            { T::AROMATIQUE,  { "Aromatique",  "Plante utilisée pour ses arômes en cuisine ou en infusion.",        Theme::PlantGreen } },
+            { T::ORNEMENTALE,  { "Ornementale",  "Plante cultivée pour sa beauté et son aspect décoratif.",         Theme::Amber } },
+            { T::FRUITIER,    { "Fruitier",    "Plante produisant des fruits comestibles.",                         Theme::WarningOrange } },
+            { T::LEGUMINEUSE, { "Légumineuse", "Plante fixatrice d'azote, souvent cultivée pour l'alimentation.",   Theme::InfoBlue } }
+        };
+        ENUM_MAP_LOOKUP(map, v)
+    }
+    inline const char* label(TypePlante v) { return get(v).label.c_str(); }
 
     // Rusticité
     inline const EnumMetadata& get(Rusticite v) {
@@ -257,24 +271,24 @@ namespace EnumInfo {
 //  4. SOLS.JSON (Spécifique aux Substrats)
 // ═════════════════════════════════════════════════════════════════════════════
 
-enum class TypeSol { TERREAU_UNIVERSEL, TERREAU_MEDITERRANEEN, TERRE_BRUYERE, TERREAU_HORTICOLE_ENRICHI, SUBSTRAT_AGRUMES, TERREAU_SEMIS, SOL_ARGILEUX, SOL_SABLEUX, EPIPHYTE, DRAINANT, INCONNU };
-enum class DrainageSol { TRES_RAPIDE, EXCELLENT, TRES_BON, BON, MOYEN, FAIBLE, INCONNU };
-enum class RetentionEau { TRES_FORTE, BONNE, MOYENNE, FAIBLE, INCONNU };
-enum class RichesseSol { ELEVEE, MOYENNE_ELEVEE, MOYENNE, FAIBLE, INCONNU };
-enum class TextureSol { TRES_LEGER, LEGER_CAILLOUTEUX, LEGERE, AERE, SOUPLE, EQUILIBREE, TRES_FINE, LOURDE, INCONNU };
-enum class CecSol { TRES_ELEVEE, ELEVEE, MOYENNE, FAIBLE, TRES_FAIBLE, INCONNU };
-enum class AerationSol { EXCELLENTE, TRES_ELEVEE, BONNE, MOYENNE, TRES_FAIBLE, INCONNU };
-enum class DensiteSol { TRES_LEGERE, LEGERE, MOYENNE, LOURDE, TRES_LOURDE, INCONNU };
-enum class tamponPh { TRES_FORT, FORT, MOYEN, FAIBLE, TRES_FAIBLE, INCONNU };
-enum class VieMicrobienne { TRES_ELEVEE, MOYENNE, FAIBLE, INCONNU };
-enum class Mineralisation { RAPIDE, MODEREE, LENTE, INCONNU };
-enum class CompatibiliteCalcaire { EXCELLENTE, MOYENNE, TRES_FAIBLE, INCONNU };
-enum class CorrectionAcidite { CHAUX, CENDRES, CALCAIRE, EAU_CALCAIRE, TERREAU_UNIVERSEL, COMPOST, INCONNU };
-enum class CorrectionAlcalinite { TERRE_BRUYERE, SOUFRE, EAU_PLUIE, COMPOST, TERREAU_UNIVERSEL, INCONNU };
-enum class CompositionSol { TOURBE, COMPOST, FIBRES_VEGETALES, SABLE, POUZZOLANE, CALCAIRE, MATIERE_ORGANIQUE_ACIDE, COMPOST_ENRICHI, ENGRAIS_ORGANIQUE, ECORCES, ARGILE, INCONNU };
-enum class risquesSol { TASSEMENT, APPAUVRISSEMENT, COMPACTION, LESSIVAGE, EXCES_AZOTE, CARENCES, PAUVRETE_LONG_TERME, INCONNU };
-enum class frequenceRenouvellement { TOUS_1_2_ANS, TOUS_2_3_ANS, TOUS_3_5_ANS, TOUS_5_10_ANS, TOUS_10_20_ANS, JAMAIS, INCONNU };
-enum class compatibiliteCalcaire { EXCELLENTE, MOYENNE, TRES_FAIBLE, INCONNU };
+enum class TypeSol                  { TERREAU_UNIVERSEL, TERREAU_MEDITERRANEEN, TERRE_BRUYERE, TERREAU_HORTICOLE_ENRICHI, SUBSTRAT_AGRUMES, TERREAU_SEMIS, SOL_ARGILEUX, SOL_SABLEUX, EPIPHYTE, DRAINANT, INCONNU };
+enum class DrainageSol              { TRES_RAPIDE, EXCELLENT, TRES_BON, BON, MOYEN, FAIBLE, INCONNU };
+enum class RetentionEau             { TRES_FORTE, BONNE, MOYENNE, FAIBLE, INCONNU };
+enum class RichesseSol              { ELEVEE, MOYENNE_ELEVEE, MOYENNE, FAIBLE, INCONNU };
+enum class TextureSol               { TRES_LEGER, LEGER_CAILLOUTEUX, LEGERE, AERE, SOUPLE, EQUILIBREE, TRES_FINE, LOURDE, INCONNU };
+enum class CecSol                   { TRES_ELEVEE, ELEVEE, MOYENNE, FAIBLE, TRES_FAIBLE, INCONNU };
+enum class AerationSol              { EXCELLENTE, TRES_ELEVEE, BONNE, MOYENNE, TRES_FAIBLE, INCONNU };
+enum class DensiteSol               { TRES_LEGERE, LEGERE, MOYENNE, LOURDE, TRES_LOURDE, INCONNU };
+enum class tamponPh                 { TRES_FORT, FORT, MOYEN, FAIBLE, TRES_FAIBLE, INCONNU };
+enum class VieMicrobienne           { TRES_ELEVEE, MOYENNE, FAIBLE, INCONNU };
+enum class Mineralisation           { RAPIDE, MODEREE, LENTE, INCONNU };
+enum class CompatibiliteCalcaire    { EXCELLENTE, MOYENNE, TRES_FAIBLE, INCONNU };
+enum class CorrectionAcidite        { CHAUX, CENDRES, CALCAIRE, EAU_CALCAIRE, TERREAU_UNIVERSEL, COMPOST, INCONNU };
+enum class CorrectionAlcalinite     { TERRE_BRUYERE, SOUFRE, EAU_PLUIE, COMPOST, TERREAU_UNIVERSEL, INCONNU };
+enum class CompositionSol           { TOURBE, COMPOST, FIBRES_VEGETALES, SABLE, POUZZOLANE, CALCAIRE, MATIERE_ORGANIQUE_ACIDE, COMPOST_ENRICHI, ENGRAIS_ORGANIQUE, ECORCES, ARGILE, INCONNU };
+enum class RisquesSol               { TASSEMENT, APPAUVRISSEMENT, COMPACTION, LESSIVAGE, EXCES_AZOTE, CARENCES, PAUVRETE_LONG_TERME, INCONNU };
+enum class frequenceRenouvellement  { TOUS_1_2_ANS, TOUS_2_3_ANS, TOUS_3_5_ANS, TOUS_5_10_ANS, TOUS_10_20_ANS, JAMAIS, INCONNU };
+enum class compatibiliteCalcaire    { EXCELLENTE, MOYENNE, TRES_FAIBLE, INCONNU };
 
 namespace EnumInfo {
 
@@ -467,18 +481,18 @@ namespace EnumInfo {
     inline const char* label(CompositionSol v) { return get(v).label.c_str(); }
 
     // Risques Sol
-    inline const EnumMetadata& get(risquesSol v) {
-        static const std::unordered_map<risquesSol, EnumMetadata> map {
-            { risquesSol::TASSEMENT,            { "Tassement",           "Risque de sol compacté, réduire les passages.",                            Theme::DangerRed } },
-            { risquesSol::APPAUVRISSEMENT,      { "Appauvrissement",     "Perte de nutriments, amendement régulier conseillé.",                      Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
-            { risquesSol::COMPACTION,           { "Compaction",          "Risque de sol durci, éviter de travailler à la mauvaise période.",         Theme::DangerRed } },
-            { risquesSol::LESSIVAGE,            { "Lessivage",           "Risque de nutriments emportés par les eaux d'arrosage.",                   Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
-            { risquesSol::EXCES_AZOTE,          { "Excès d'azote",       "Favorise la croissance au détriment de la floraison.",                     Theme::WarningOrange } },
-            { risquesSol::CARENCES,             { "Carences",            "Manque de nutriments essentiels, surveiller la fertilité.",                Theme::DangerRed } },
-            { risquesSol::PAUVRETE_LONG_TERME,  { "Pauvreté long terme", "Dégradation progressive du sol, rotation et amendement nécessaires.",      Theme::DangerRed } }
+    inline const EnumMetadata& get(RisquesSol v) {
+        static const std::unordered_map<RisquesSol, EnumMetadata> map {
+            { RisquesSol::TASSEMENT,            { "Tassement",           "Risque de sol compacté, réduire les passages.",                            Theme::DangerRed } },
+            { RisquesSol::APPAUVRISSEMENT,      { "Appauvrissement",     "Perte de nutriments, amendement régulier conseillé.",                      Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { RisquesSol::COMPACTION,           { "Compaction",          "Risque de sol durci, éviter de travailler à la mauvaise période.",         Theme::DangerRed } },
+            { RisquesSol::LESSIVAGE,            { "Lessivage",           "Risque de nutriments emportés par les eaux d'arrosage.",                   Theme::withAlpha(Theme::InfoBlue, 0.8f) } },
+            { RisquesSol::EXCES_AZOTE,          { "Excès d'azote",       "Favorise la croissance au détriment de la floraison.",                     Theme::WarningOrange } },
+            { RisquesSol::CARENCES,             { "Carences",            "Manque de nutriments essentiels, surveiller la fertilité.",                Theme::DangerRed } },
+            { RisquesSol::PAUVRETE_LONG_TERME,  { "Pauvreté long terme", "Dégradation progressive du sol, rotation et amendement nécessaires.",      Theme::DangerRed } }
         }; ENUM_MAP_LOOKUP(map, v)
     }
-    inline const char* label(risquesSol v) { return get(v).label.c_str(); }
+    inline const char* label(RisquesSol v) { return get(v).label.c_str(); }
 }
 
 
@@ -486,13 +500,13 @@ namespace EnumInfo {
 //  5. RACINES.JSON (Spécifique aux Contenants)
 // ═════════════════════════════════════════════════════════════════════════════
 
-enum class FormePot { BAC, COLONNE, JARDINIERE, STANDARD, INCONNU };
-enum class TypePot { TERRE_CUITE, PLASTIQUE, CERAMIQUE_EMAILLEE, GEOTEXTILE, VERRE, BOIS, INCONNU };
-enum class profondeurPot {FAIBLE, MOYEN, PROFOND, INCONNU};
-enum class LargeurPot { ETROIT, MOYEN, LARGE, TRES_LARGE,INCONNU };
-enum class FrequenceRempotage { FREQUENT, ANNUEL, BI_ANNUEL, RARE, INCONNU };
+enum class FormePot             { BAC, COLONNE, JARDINIERE, STANDARD, INCONNU };
+enum class TypePot              { TERRE_CUITE, PLASTIQUE, CERAMIQUE_EMAILLEE, GEOTEXTILE, VERRE, BOIS, INCONNU };
+enum class profondeurPot        {FAIBLE, MOYEN, PROFOND, INCONNU};
+enum class LargeurPot           { ETROIT, MOYEN, LARGE, TRES_LARGE,INCONNU };
+enum class FrequenceRempotage   { FREQUENT, ANNUEL, BI_ANNUEL, RARE, INCONNU };
 enum class SensibiliteRempotage { FAIBLE, MOYENNE, ELEVEE, INCONNU };
-enum class BesoinsDrainage { FAIBLE, MOYEN, ELEVEE, ESSENTIEL, INCONNU }; 
+enum class BesoinsDrainage      { FAIBLE, MOYEN, ELEVEE, ESSENTIEL, INCONNU }; 
 
 namespace EnumInfo {
 
@@ -564,9 +578,9 @@ namespace EnumInfo {
     inline const EnumMetadata& get(SensibiliteRempotage v) {
         using S = SensibiliteRempotage;
         static const std::unordered_map<S, EnumMetadata> map {
-            { S::FAIBLE,     { "Faible",     "Plante robuste, supporte bien le rempotage.",   Theme::PlantGreen } },
-            { S::MOYENNE,    { "Moyenne",    "Plante modérément sensible, rempotage à faire avec précaution.", Theme::PlantMid } },
-            { S::ELEVEE,     { "Élevée",     "Plante très sensible, rempotage à éviter ou à faire très délicatement.", Theme::DangerRed } }
+            { S::FAIBLE,     { "Faible",     "Plante robuste, supporte bien le rempotage.",                             Theme::PlantGreen } },
+            { S::MOYENNE,    { "Moyenne",    "Plante modérément sensible, rempotage à faire avec précaution.",          Theme::PlantMid } },
+            { S::ELEVEE,     { "Élevée",     "Plante très sensible, rempotage à éviter ou à faire très délicatement.",  Theme::DangerRed } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -592,24 +606,24 @@ namespace EnumInfo {
 //  6. BOUTURES.JSON (Spécifique à la multiplication)
 // ═════════════════════════════════════════════════════════════════════════════
 
-enum class TauxReussite { TRES_ELEVE, ELEVE, BON, MOYEN, VARIABLE, FAIBLE, INCONNU };
-enum class TypeTige { HERBACEE, SEMI_LIGNEUSE, LIGNEUSE, FEUILLE, RACINE, INCONNU };
-enum class HormoneBouturage { NON, OPTIONNEL, RECOMMANDE, INCONNU };
-enum class HumiditeBouture { ELEVEE, MOYENNE, FAIBLE, IMMERGEE, INCONNU };
-enum class SubstratBouture { EAU, LEGER, LEGER_DRAINANT, TRES_DRAINANT, MINERAL, INCONNU };
-enum class EtapeBouture { COUPER_SOUS_NOEUD, RETRAIT_FEUILLES_BASSES, PLANTER_SUBSTRAT, PLACER_LUMIERE_INDIRECTE, PRELEVER_TIGE_SEMI_RIGIDE, ARROSAGE_LEGER, COUPER_BOIS_DORMANT, PLANTER_ENTERRES, RETIRER_FEUILLES_EAU, CHANGER_EAU_REGULIEREMENT, PRELEVER_FEUILLE, SECHAGE, POSER_SUBSTRAT, COUPER_RACINE, PLANTER_HORIZONTAL, COUVRIR, INCONNU };
+enum class TauxReussite         { TRES_ELEVE, ELEVE, BON, MOYEN, VARIABLE, FAIBLE, INCONNU };
+enum class TypeTige             { HERBACEE, SEMI_LIGNEUSE, LIGNEUSE, FEUILLE, RACINE, INCONNU };
+enum class HormoneBouturage     { NON, OPTIONNEL, RECOMMANDE, INCONNU };
+enum class HumiditeBouture      { ELEVEE, MOYENNE, FAIBLE, IMMERGEE, INCONNU };
+enum class SubstratBouture      { EAU, LEGER, LEGER_DRAINANT, TRES_DRAINANT, MINERAL, INCONNU };
+enum class EtapeBouture         { COUPER_SOUS_NOEUD, RETRAIT_FEUILLES_BASSES, PLANTER_SUBSTRAT, PLACER_LUMIERE_INDIRECTE, PRELEVER_TIGE_SEMI_RIGIDE, ARROSAGE_LEGER, COUPER_BOIS_DORMANT, PLANTER_ENTERRES, RETIRER_FEUILLES_EAU, CHANGER_EAU_REGULIEREMENT, PRELEVER_FEUILLE, SECHAGE, POSER_SUBSTRAT, COUPER_RACINE, PLANTER_HORIZONTAL, COUVRIR, INCONNU };
 
 namespace EnumInfo {
     // ── Taux de Réussite ──
     inline const EnumMetadata& get(TauxReussite v) {
         using T = TauxReussite;
         static const std::unordered_map<T, EnumMetadata> map {
-            { T::TRES_ELEVE, { "Très élevé", "Réussit dans presque tous les cas, même pour les débutants.",  Theme::PlantGreen } },
-            { T::ELEVE,      { "Élevé",      "Bonne probabilité de succès avec des conditions correctes.",   Theme::PlantMid } },
-            { T::BON,        { "Bon",        "Réussit bien en suivant les étapes recommandées.",             Theme::TextSecondary } },
-            { T::MOYEN,      { "Moyen",      "Demande de la patience, plusieurs tentatives parfois utiles.",  Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
-            { T::VARIABLE,   { "Variable",   "Résultats inégaux selon la plante et la saison.",              Theme::Amber } },
-            { T::FAIBLE,     { "Faible",     "Technique délicate, taux d'échec élevé, réservé aux experts.", Theme::DangerRed } }
+            { T::TRES_ELEVE, { "Très élevé", "Réussit dans presque tous les cas, même pour les débutants.",     Theme::PlantGreen } },
+            { T::ELEVE,      { "Élevé",      "Bonne probabilité de succès avec des conditions correctes.",      Theme::PlantMid } },
+            { T::BON,        { "Bon",        "Réussit bien en suivant les étapes recommandées.",                Theme::TextSecondary } },
+            { T::MOYEN,      { "Moyen",      "Demande de la patience, plusieurs tentatives parfois utiles.",    Theme::withAlpha(Theme::WarningOrange, 0.8f) } },
+            { T::VARIABLE,   { "Variable",   "Résultats inégaux selon la plante et la saison.",                 Theme::Amber } },
+            { T::FAIBLE,     { "Faible",     "Technique délicate, taux d'échec élevé, réservé aux experts.",    Theme::DangerRed } }
         };
         ENUM_MAP_LOOKUP(map, v)
     }
@@ -728,6 +742,13 @@ namespace EnumInfo {
         auto it = m.find(s); return it != m.end() ? it->second : Saison::INCONNU;
     }
 
+    inline TypePlante parseTypePlante(const std::string& s) {
+        static const std::unordered_map<std::string, TypePlante> m {
+            {"AROMATIQUE", TypePlante::AROMATIQUE}, {"ORNEMENTALE", TypePlante::ORNEMENTALE}, {"FRUITIER", TypePlante::FRUITIER}, 
+            {"LEGUMINEUSE", TypePlante::LEGUMINEUSE}};
+        auto it = m.find(s); return it != m.end() ? it->second : TypePlante::INCONNU;
+    }
+
     inline Rusticite parseRusticite(const std::string& s) {
         static const std::unordered_map<std::string, Rusticite> m {
             {"RUSTIQUE", Rusticite::RUSTIQUE}, {"SEMI_RUSTIQUE", Rusticite::SEMI_RUSTIQUE}, {"FRAGILE", Rusticite::FRAGILE}};
@@ -785,7 +806,7 @@ namespace EnumInfo {
     }
 
     // --- SOLS.JSON (Nouveaux parsers générés) ---
-    inline TypeSol typeSolFromString(const std::string& s) {
+    inline TypeSol parseTypeSol(const std::string& s) {
         static const std::unordered_map<std::string, TypeSol> m {
             {"TERREAU_UNIVERSEL", TypeSol::TERREAU_UNIVERSEL}, {"TERREAU_MEDITERRANEEN", TypeSol::TERREAU_MEDITERRANEEN},
             {"TERRE_BRUYERE", TypeSol::TERRE_BRUYERE}, {"TERREAU_HORTICOLE_ENRICHI", TypeSol::TERREAU_HORTICOLE_ENRICHI},
@@ -892,12 +913,12 @@ namespace EnumInfo {
         auto it = m.find(s); return it != m.end() ? it->second : CompositionSol::INCONNU;
     }
 
-    inline risquesSol parseRisquesSol(const std::string& s) {
-        static const std::unordered_map<std::string, risquesSol> m {
-            {"TASSEMENT", risquesSol::TASSEMENT}, {"APPAUVRISSEMENT", risquesSol::APPAUVRISSEMENT}, {"COMPACTION", risquesSol::COMPACTION},
-            {"LESSIVAGE", risquesSol::LESSIVAGE}, {"EXCES_AZOTE", risquesSol::EXCES_AZOTE}, {"CARENCES", risquesSol::CARENCES},
-            {"PAUVRETE_LONG_TERME", risquesSol::PAUVRETE_LONG_TERME}};
-        auto it = m.find(s); return it != m.end() ? it->second : risquesSol::INCONNU;
+    inline RisquesSol parseRisquesSol(const std::string& s) {
+        static const std::unordered_map<std::string, RisquesSol> m {
+            {"TASSEMENT", RisquesSol::TASSEMENT}, {"APPAUVRISSEMENT", RisquesSol::APPAUVRISSEMENT}, {"COMPACTION", RisquesSol::COMPACTION},
+            {"LESSIVAGE", RisquesSol::LESSIVAGE}, {"EXCES_AZOTE", RisquesSol::EXCES_AZOTE}, {"CARENCES", RisquesSol::CARENCES},
+            {"PAUVRETE_LONG_TERME", RisquesSol::PAUVRETE_LONG_TERME}};
+        auto it = m.find(s); return it != m.end() ? it->second : RisquesSol::INCONNU;
     }
 
     // --- RACINES.JSON ---
