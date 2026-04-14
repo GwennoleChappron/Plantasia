@@ -4,6 +4,7 @@
 #include "VFX/BackgroundEngine.hpp"
 #include "States/StateMainMenu.hpp"
 #include "Services/DataBaseManager.hpp"
+#include "Services/DataBaseManagerV2.hpp"
 #include "Data/UserBalcony.hpp"
 #include "Services/CalendarManager.hpp"
 
@@ -14,6 +15,7 @@ private:
     StateMachine     m_stateMachine;
     sf::Clock        m_clock;
     DatabaseManager  m_database;
+    DatabaseManagerV2 m_databaseV2;
     UserBalcony      m_userBalcony;
     CalendarManager  m_calendar;
 
