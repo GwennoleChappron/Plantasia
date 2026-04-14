@@ -35,6 +35,16 @@ endif()
 # On compile avec GLAD seulement si la variable le contient
 add_executable(Plantasia ${SOURCES} ${IMGUI_SOURCES} ${GLAD_SOURCES})
 
+# ── SQLiteCpp ────────────────────────────────────────────────
+FetchContent_Declare(
+    SQLiteCpp
+    GIT_REPOSITORY https://github.com/SRombauts/SQLiteCpp.git
+    GIT_TAG        3.3.2
+)
+set(SQLITECPP_RUN_CPPCHECK OFF CACHE BOOL "" FORCE)
+set(SQLITECPP_RUN_CPPLINT  OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(SQLiteCpp)
+
 # --- LES CHEMINS D'INCLUSION ---
 target_include_directories(Plantasia PUBLIC 
     src                                
@@ -57,6 +67,8 @@ endif()
 find_package(OpenGL REQUIRED)
 
 target_link_libraries(Plantasia 
+    SQLiteCpp
+    sqlite3
     sfml-graphics 
     sfml-window 
     sfml-audio 
